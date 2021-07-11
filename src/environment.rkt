@@ -35,7 +35,9 @@
     (env environment?))) ;local env of the function
 
 (define new-global-scope (lambda () (global-scope)))
-(define new-local-scope (lambda () (local-scope (list) (empty-env))))
+(define new-local-scope (lambda (sc) (cases scope sc
+                                       (global-scope () (local-scope (list) (empty-env)))
+                                       (local-scope (gvl env) (local-scope (list) (env))))))
 
 ;gets the proper local or global value for a variable
 (define apply-scope
@@ -55,8 +57,8 @@
       (global-scope () (set! globe (extend-env globe var val)))
       (local-scope (global-var-list env)
         ((cond
-          ((member var global-var-list) (set! globe (extend-env globe var val)))
-          (else (extend-env env var val))))))))
+           ((member var global-var-list) (set! globe (extend-env globe var val)))
+           (else (extend-env env var val))))))))
     
   
 
