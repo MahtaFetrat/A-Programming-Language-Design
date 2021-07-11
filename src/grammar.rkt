@@ -102,7 +102,75 @@
    (ID symbol?)
    (exp expression?)
    (statements statements?)))
-   
+ 
+;15. Expression → Disjunction
+(define-datatype expression expression?
+  (an-expression
+   (disjunction disjunction?)))
+
+;16. Disjunction → Conjunction | Disjunction ‘or‘ Conjunction
+(define-datatype disjunction disjunction?
+  (single-disjunction
+   (conjunction conjunction?))
+  (mult-disjunction
+   (conjunction conjunction?)
+   (disjunction disjunction?)))
+
+;17. Conjunction → Inversion | Conjunction ‘and‘ Inversion
+(define-datatype conjunction conjunction?
+  (single-conjunction
+   (inversion inversion?))
+  (mult-conjunction
+   (inversion inversion?)
+   (conjunction conjunction?)))
+
+;18. Inversion → ‘not‘ Inversion | Comparison
+(define-datatype inversion inversion?
+  (not-inversion
+   (invresion inversion?))
+  (a-comparison
+   (comparison comparison?)))
+
+;19. Comparison → Sum Compare_op_Sum_pairs | Sum
+(define-datatype comparison comparison?
+  (single-comparison
+   (sum sum?))
+  (mult-comparison
+   (sum sum?)
+   (compare-op-sum-pairs compare-op-sum-pairs?)))
+
+;20. Compare_op_Sum_pairs → Compare_op_Sum_pair| Compare_op_Sum_pairs Compare_op_Sum_pair
+(define-datatype compare-op-sum-pairs compare-op-sum-pairs?
+  (single-compare-op-sum-pairs
+   (compare-op-sum-pair compare-op-sum-pair?))
+  (mult-compare-op-sum-pairs
+   (compare-op-sum-pairs compare-op-sum-pairs?)
+   (compare-op-sum-pair compare-op-sum-pair?)))
+
+;21. Compare_op_Sum_pair → Eq_Sum | Lt_Sum| Gt_Sum
+(define-datatype compare-op-sum-pair compare-op-sum-pair?
+  (eq-sum-pair
+   (eq-sum eq-sum?))
+  (lt-sum-pair
+   (lt-sum lt-sum?))
+  (gt-sum-pair
+   (gt-sum gt-sum?)))
+
+;22. Eq_Sum → ‘ == ‘ Sum
+(define-datatype eq-sum eq-sum?
+  (an-eq-sum
+   (sum sum?)))
+
+;23. Lt_Sum → ‘ < ‘ Sum
+(define-datatype lt-sum lt-sum?
+  (a-lt-sum
+   (sum sum?)))
+
+;24. Gt_Sum → ‘ > ‘ Sum
+(define-datatype gt-sum st-sum?
+  (a-gt-sum
+   (sum sum?)))
+
 "
 .
 .
