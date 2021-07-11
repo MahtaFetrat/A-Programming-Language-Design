@@ -71,12 +71,7 @@
    (statements statements?)))
 
 ;10. Params → Param_with_default | Params ‘, ‘ Param_with_default
-(define-datatype params params?
-  (single-param
-   (param-with-default param-with-default?))
-  (mult-param
-   (params params?)
-   (param-with-default param-with-default?)))
+(define params? (lambda (e) (and (not (null? e)) (list-of param-with-default?))))
 
 ;11. Param_with_default → ID ‘ = ‘ Expression
 (define-datatype param-with-default param-with-default?
@@ -224,12 +219,7 @@
    (arguments arguments?)))
 
 ;30. Arguments → Expression | Arguments ‘, ‘ Expression
-(define-datatype arguments arguments?
-  (single-arguments
-   (exp expression?))
-  (mult-arguments
-   (arguments arguments?)
-   (exp expression?)))
+(define arguments? (lambda (e) ((and (not (null? e)) (list-of expression?)))))
 
 ;31. Atom → ID | ‘True‘ | ‘False‘ | ‘None‘ | NUMBER | List
 (define atom?
