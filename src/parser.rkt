@@ -40,8 +40,8 @@
      ((DEF ID OPEN-PAR params CLOSE-PAR COLON statements) (params-func-def $2 $4 $7))
      ((DEF ID ZERO-ARG COLON statements) (zero-param-func-def $2 $5)))
     (params
-     ((param-with-default) (single-param $1))
-     ((params COMMA param-with-default) (mult-param $1 $3)))
+     ((param-with-default) (list $1))
+     ((params COMMA param-with-default) (append $1 (list $3))))
     (param-with-default
      ((ID ASSIGN expression) (a-param-with-default $1 $3)))
     (if-stmt
@@ -98,8 +98,8 @@
      ((primary ZERO-ARG) (zero-arg-func-call $1))
      ((primary OPEN-PAR arguments CLOSE-PAR) (args-func-call $1 $3)))
     (arguments
-     ((expression) (single-arguments $1))
-     ((arguments COMMA expression) (mult-arguments $1 $3)))
+     ((expression) (list $1))
+     ((arguments COMMA expression) (append $1 (list $3))))
     (atom
      ((ID) $1)
      ((TRUE) #t)
