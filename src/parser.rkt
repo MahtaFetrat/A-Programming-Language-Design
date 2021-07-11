@@ -45,5 +45,38 @@
      ((param-with-defaulta) (single-param $1))
      ((params COMMA params-with-default) (mult-param $1 $3)))
     (param-with-default
-     ((ID ASSIGN expression) (a-param-with-default $1 $3))))))
+     ((ID ASSIGN expression) (a-param-with-default $1 $3)))
+    (if-stmt
+     ((IF expression COLON statements else-block) (an-if-stmt $2 $4 $5)))
+    (else-block
+     ((ELSE COLON statments) (an-else-stmt $3)))
+    (for-stmt
+     ((FOR ID IN expression COLON statements) (a-for-stmt $2 $4 $6)))
+    (expression
+     ((disjunction) (an-expression $1)))
+    (disjuction
+     ((conjuction) (single-disjunction $1))
+     ((disjunction OR conjuction) (mult-disjunction $1 $3)))
+    (conjuction
+     ((inversion) (single-conjuction $1))
+     ((conjuction AND inversion) (mult-conjuction $1 $3)))
+    (inverion
+     ((NOT inversion) (not-inversion $2))
+     ((comparison) (a-comparison $1)))
+    (comparison
+     ((sum compare-op-sum-pairs) (mult-comparison $1 $2))
+     ((sum) (single-comparison $1)))
+    (compare-op-sum-pairs
+     ((compare-op-sum-pair) (single-compare-op-sum-pairs $1))
+     ((compare-op-sum-pairs compare-op-sum-pair) (mult-compare-op-sum-pairs $1 $2)))
+    (compare-op-sum-pair
+     ((eq-sum) (eq-sum-pair $1))
+     ((lt-sum) (lt-sum-pair $1))
+     ((gt-sum) (gt-sum-pair $1)))
+    (eq-sum
+     ((EQUAL sum) (an-eq-sum $2)))
+    (lt-sum
+     ((LESS sum) (an-lt-sum $2)))
+    (gt-sum
+     ((GREATER sum) (a-gt-sum $2))))))
     
