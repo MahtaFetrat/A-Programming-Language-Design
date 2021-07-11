@@ -2,7 +2,7 @@
 
 (provide (all-defined-out))
 
-;1. P rogram → Statements EOF
+;1. Program → Statements EOF
 (define-datatype program program?
   (a-program
    (statements statement?)))
@@ -34,7 +34,7 @@
   (break-stmt)
   (continue-stmt))
 
-;5. Compound_stmt → Function_def | If_stmt | F or_stmt
+;5. Compound_stmt → Function_def | If_stmt | For_stmt
 (define-datatype compound-stmt compound-stmt?
   (a-function-def
    (function-def function-def?))
@@ -60,6 +60,49 @@
   (a-global-stmt
    (ID symbol?)))
 
+;9. Function_def → ‘def‘ ID ‘(‘ Params ‘)‘ ‘ : ‘ Statements|‘def‘ ID ‘() : ‘ Statements
+(define-datatype function-def function-def?
+  (zero-param-func-def
+   (ID symbol?)
+   (statements statements?))
+  (params-func-def
+   (ID symbol?)
+   (params params?)
+   (statements statements?)))
+
+;10. Params → Param_with_default | Params ‘, ‘ Param_with_default
+(define-datatype params params?
+  (single-param
+   (param-with-default param-with-default?))
+  (mult-param
+   (params params?)
+   (param-with-default param-with-default?)))
+
+;11. Param_with_default → ID ‘ = ‘ Expression
+(define-datatype param-with-default param-with-default?
+  (a-param-with-default
+   (ID symbol?)
+   (exp expression?)))
+
+;12. If_stmt → ‘if‘ Expression ‘ : ‘ Statements Else_block
+(define-datatype if-stmt if-stmt?
+  (an-if-stmt
+   (exp expression?)
+   (statements statements?)
+   (else-block else-block?)))
+
+;13. Else_block → ‘else‘ ‘ : ‘ Statements
+(define-datatype else-block else-block?
+  (an-else-block
+   (statements statements?)))
+
+;14. For_stmt → ‘for‘ ID ‘in‘ Expression ‘ : ‘ Statements
+(define-datatype for-stmt for-stmt?
+  (a-for-stmt
+   (ID symbol?)
+   (exp expression?)
+   (statements statements?)))
+   
 "
 .
 .
