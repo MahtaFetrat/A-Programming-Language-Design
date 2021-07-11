@@ -2,7 +2,7 @@
 (require parser-tools/lex
          (prefix-in : parser-tools/lex-sre))
 
-(provide lex)
+(provide (all-defined-out))
 
 (define-tokens a (NUM ID))
 (define-empty-tokens b (SEMICOL PASS BREAK CONTINUE ASSIGN RETURN
@@ -18,8 +18,6 @@
    (";" (token-SEMICOL))
    ("pass" (token-PASS))
    ("break" (token-BREAK))
-   (whitespace (py-lexer input-port))
-   ((eof) (token-EOF))
    ("continue" (token-CONTINUE))
    ("=" (token-ASSIGN))
    ("return" (token-RETURN))
@@ -56,6 +54,8 @@
      (:: (:+ (char-range #\0 #\9)) #\. (:+ (char-range #\0 #\9))))
     (token-NUM (string->number lexeme)))
    ((:: (:or (char-range #\A #\Z) (char-range #\a #\z) #\_) (:* (:or (char-range #\A #\Z) (char-range #\a #\z) #\_ (char-range #\0 #\9))))
-    (token-ID (string->symbol lexeme)))))
+    (token-ID (string->symbol lexeme)))
+   (whitespace (py-lexer input-port)) ;*************
+   ((eof) (token-EOF))))
    
 (define lex (lambda (input) (lambda () (py-lexer input))))
