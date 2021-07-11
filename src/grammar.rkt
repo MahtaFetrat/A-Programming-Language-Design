@@ -5,7 +5,7 @@
 ;1. P rogram → Statements EOF
 (define-datatype program program?
   (a-program
-   (statements statement?)))
+   (statements statements?)))
 
 ;2. Statements → Statement ‘; ‘ | Statements Statement ‘; ‘
 (define-datatype statements statements?
@@ -36,8 +36,8 @@
 
 ;5. Compound_stmt → Function_def | If_stmt | For_stmt
 (define-datatype compound-stmt compound-stmt?
-  (function-def-comp-stmt
-   (function-def function-def?))
+  (func-def-comp-stmt
+   (func-def function-def?))
   (if-comp-stmt
    (if-stmt if-stmt?))
   (for-comp-stmt
@@ -62,12 +62,12 @@
 
 ;9. Function_def → ‘def‘ ID ‘(‘ Params ‘)‘ ‘ : ‘ Statements|‘def‘ ID ‘() : ‘ Statements
 (define-datatype function-def function-def?
-  (zero-param-func-def
-   (ID symbol?)
-   (statements statements?))
   (params-func-def
    (ID symbol?)
    (params params?)
+   (statements statements?))
+  (zero-param-func-def
+   (ID symbol?)
    (statements statements?)))
 
 ;10. Params → Param_with_default | Params ‘, ‘ Param_with_default
@@ -113,16 +113,16 @@
   (single-disjunction
    (conjunction conjunction?))
   (mult-disjunction
-   (conjunction conjunction?)
-   (disjunction disjunction?)))
+   (disjunction disjunction?)
+   (conjunction conjunction?)))
 
 ;17. Conjunction → Inversion | Conjunction ‘and‘ Inversion
 (define-datatype conjunction conjunction?
   (single-conjunction
    (inversion inversion?))
   (mult-conjunction
-   (inversion inversion?)
-   (conjunction conjunction?)))
+   (conjunction conjunction?)
+   (inversion inversion?)))
 
 ;18. Inversion → ‘not‘ Inversion | Comparison
 (define-datatype inversion inversion?
@@ -133,11 +133,11 @@
 
 ;19. Comparison → Sum Compare_op_Sum_pairs | Sum
 (define-datatype comparison comparison?
-  (single-comparison
-   (sum sum?))
   (mult-comparison
    (sum sum?)
-   (compare-op-sum-pairs compare-op-sum-pairs?)))
+   (compare-op-sum-pairs compare-op-sum-pairs?))
+  (single-comparison
+   (sum sum?)))
 
 ;20. Compare_op_Sum_pairs → Compare_op_Sum_pair| Compare_op_Sum_pairs Compare_op_Sum_pair
 (define-datatype compare-op-sum-pairs compare-op-sum-pairs?
@@ -163,7 +163,7 @@
 
 ;23. Lt_Sum → ‘ < ‘ Sum
 (define-datatype lt-sum lt-sum?
-  (a-lt-sum
+  (an-lt-sum
    (sum sum?)))
 
 ;24. Gt_Sum → ‘ > ‘ Sum
@@ -173,42 +173,42 @@
 
 ;25. Sum → Sum ‘ + ‘ Term | Sum ‘ - ‘ Term | Term
 (define-datatype sum sum?
-  (single-sum
-   (term term?))
   (add-sum
    (sum sum?)
    (term term?))
   (sub-sum
    (sum sum?)
+   (term term?))
+  (single-sum
    (term term?)))
 
 ;26. Term → Term ‘ ∗ ‘ Factor | Term ‘/‘ Factor | Factor
 (define-datatype term term?
-  (single-term
-   (factor factor?))
   (mul-term
    (term term?)
    (factor factor?))
   (div-term
    (term term?)
+   (factor factor?))
+  (single-term
    (factor factor?)))
    
 ;27. Factor → ‘ + ‘ Factor | ‘ - ‘ Factor | Power
 (define-datatype factor factor?
-  (single-factor
-   (power power?))
   (pos-factor
    (factor factor?))
   (neg-factor
-   (factor factor?)))
+   (factor factor?))
+  (single-factor
+   (power power?)))
   
 ;28. Power → Atom ‘ ∗ ∗‘ Factor | Primary
 (define-datatype power power?
-  (a-primary
-   (primary primary?))
   (a-pow
    (atom atom?)
-   (factor factor?)))
+   (factor factor?))
+  (a-primary
+   (primary primary?)))
    
 ;29. Primary → Atom | Primary ‘[‘ Expression ‘]‘ | Primary ‘()‘| Primary ‘(‘ Arguments ‘)‘
 (define-datatype primary primary?
@@ -236,24 +236,7 @@
   (lambda (a) (or (symbol? a) (boolean? a) (null? a) (number? a) (py-list? a))))
 
 ;32. List → ‘[‘ Expressions ‘]‘ | ‘[]‘
-(define-datatype py-list py-list?
-  (empty-py-list)
-  (exps-py-list
-   (exps expressions?)))
+(define py-list? (list-of expression?))
 
 ;33. Expressions → Expressions ‘, ‘ Expression | Expression
-(define-datatype expressions expressions?
-  (single-expressions
-   (exp expression?))
-  (mult-expressions
-   (exps expressions?)
-   (exp expression?)))
-         
-   
-"Atom is defined this way for the ease of computations on racket defined values,
-otherwise it would be some define-datatype for our own defined NUMBER, BOOLEAN, ...
-so later, its better to redefine py-list as racket list of Expressions so that predefined functions like cons, append, ... will work for it"
-
-
-
-               
+(define expressions? (lambda (e) (and (not (null? e)) (list-of expression?))))
