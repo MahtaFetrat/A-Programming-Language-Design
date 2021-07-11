@@ -17,10 +17,48 @@
 
 ;3. Statement → Compound_stmt | Simple_stmt
 (define-datatype statement statement?
-  (a-compound-statement
-   (comp-statement compound-statement?))
-  (a-simple-statement
-   (sim_statement simple-statement?)))
+  (a-compound-stmt
+   (compound-stmt compound-stmt?))
+  (a-simple-stmt
+   (simple-stmt simple-stmt?)))
+
+;4. Simple_stmt → Assignment | Return_stmt | Global_stmt
+(define-datatype simple-stmt simple-stmt?
+  (an-assign-stmt
+   (assignment assignment?))
+  (a-return-stmt
+   (return-stmt return-stmt?))
+  (a-global-stmt
+   (global-stmt global-stmt?))
+  (pass-stmt)
+  (break-stmt)
+  (continue-stmt))
+
+;5. Compound_stmt → Function_def | If_stmt | F or_stmt
+(define-datatype compound-stmt compound-stmt?
+  (a-function-def
+   (function-def function-def?))
+  (an-if-stmt
+   (if-stmt if-stmt?))
+  (a-for-stmt
+   (for-stmt for-stmt?)))
+
+;6. Assignment → ID ‘ = ‘ Expression
+(define-datatype assignment assignment?
+  (an-assignment
+   (ID symbol?)
+   (exp expression?)))
+
+;7. Return_stmt → ‘return‘ | ‘return‘ Expression
+(define-datatype return-stmt return-stmt?
+  (empty-return-stmt)
+  (exp-return-stmt
+   (exp expression?)))
+
+;8. Global_stmt → ‘global‘ ID
+(define-datatype global-stmt global-stmt?
+  (a-global-stmt
+   (ID symbol?)))
 
 "
 .
