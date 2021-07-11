@@ -2,7 +2,7 @@
 
 (provide (all-defined-out))
 
-;1. Program → Statements EOF
+;1. P rogram → Statements EOF
 (define-datatype program program?
   (a-program
    (statements statement?)))
@@ -24,11 +24,11 @@
 
 ;4. Simple_stmt → Assignment | Return_stmt | Global_stmt
 (define-datatype simple-stmt simple-stmt?
-  (an-assign-stmt
+  (assignment-simple-stmt
    (assignment assignment?))
-  (a-return-stmt
+  (return-simple-stmt
    (return-stmt return-stmt?))
-  (a-global-stmt
+  (global-simple-stmt
    (global-stmt global-stmt?))
   (pass-stmt)
   (break-stmt)
@@ -36,11 +36,11 @@
 
 ;5. Compound_stmt → Function_def | If_stmt | For_stmt
 (define-datatype compound-stmt compound-stmt?
-  (a-function-def
+  (function-def-comp-stmt
    (function-def function-def?))
-  (an-if-stmt
+  (if-comp-stmt
    (if-stmt if-stmt?))
-  (a-for-stmt
+  (for-comp-stmt
    (for-stmt for-stmt?)))
 
 ;6. Assignment → ID ‘ = ‘ Expression
@@ -102,7 +102,7 @@
    (ID symbol?)
    (exp expression?)
    (statements statements?)))
- 
+
 ;15. Expression → Disjunction
 (define-datatype expression expression?
   (an-expression
@@ -167,7 +167,7 @@
    (sum sum?)))
 
 ;24. Gt_Sum → ‘ > ‘ Sum
-(define-datatype gt-sum st-sum?
+(define-datatype gt-sum gt-sum?
   (a-gt-sum
    (sum sum?)))
 
@@ -230,7 +230,11 @@
   (mult-arguments
    (arguments arguments?)
    (exp expression?)))
-   
+
+;31. Atom → ID | ‘True‘ | ‘False‘ | ‘None‘ | NUMBER | List
+(define atom?
+  (lambda (a) (or (symbol? a) (boolean? a) (null? a) (number? a) (py-list? a))))
+
 ;32. List → ‘[‘ Expressions ‘]‘ | ‘[]‘
 (define-datatype py-list py-list?
   (empty-py-list)
@@ -238,7 +242,7 @@
    (exps expressions?)))
 
 ;33. Expressions → Expressions ‘, ‘ Expression | Expression
-(define expressions?
+(define-datatype expressions expressions?
   (single-expressions
    (exp expression?))
   (mult-expressions
