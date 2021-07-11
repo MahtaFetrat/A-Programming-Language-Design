@@ -231,19 +231,24 @@
    (arguments arguments?)
    (exp expression?)))
    
-"
-.
-.
-.
-rest of the grammar from number  4 to 30 and 32 to 33 will we defined in the same way"
+;32. List → ‘[‘ Expressions ‘]‘ | ‘[]‘
+(define-datatype py-list py-list?
+  (empty-py-list)
+  (exps-py-list
+   (exps expressions?)))
 
-;31. Atom → ID | ‘True‘ | ‘False‘ | ‘None‘ | NUMBER | List
-(define atom?
-  (lambda (a) (or (symbol? a) (boolean? a) (null? a) (number? a) (py-list? a))))
-
+;33. Expressions → Expressions ‘, ‘ Expression | Expression
+(define expressions?
+  (single-expressions
+   (exp expression?))
+  (mult-expressions
+   (exps expressions?)
+   (exp expression?)))
+         
+   
 "Atom is defined this way for the ease of computations on racket defined values,
-otherwise it would be some define-datatype for our oown defined NUMBER, BOOLEAN, ...
-so better to define py-list as racket list of Expressions so that predefined functions like cons, append, ... will work for it"
+otherwise it would be some define-datatype for our own defined NUMBER, BOOLEAN, ...
+so later, its better to redefine py-list as racket list of Expressions so that predefined functions like cons, append, ... will work for it"
 
 
 
