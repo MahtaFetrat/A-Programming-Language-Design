@@ -7,18 +7,16 @@
 
 (define py-parser
   (parser
-   (start program)
+   (start statements)
    (end EOF)
-   (error (lambda (tok-ok? tok-name tok-value) (error 'parser "problem parsing '~s ~s'" tok-name to-value)))
+   (error (lambda (tok-ok? tok-name tok-value) (error 'parser "problem parsing '~s ~s'" tok-name tok-value)))
    (tokens a b)
    (grammar
-    (program
-     ((statements EOF) (a-program $1)))
     (statements
      ((statement SEMICOL) (single-statement $1))
      ((statements statements SEMICOL) (mult-statement $1 $2)))
     (statement
-     ((simple-stmt) (a-single-stmt $1))
+     ((simple-stmt) (a-simple-stmt $1))
      ((compound-stmt) (a-compound-stmt $1)))
     (simple-stmt
      ((assignment) (assignment-simple-stmt $1))
@@ -42,25 +40,25 @@
      ((DEF ID OPEN-PAR params CLOSE-PAR COLON statements) (params-func-def $2 $4 $7))
      ((DEF ID ZERO-ARG COLON statements) (zero-param-func-def $2 $5)))
     (params
-     ((param-with-defaulta) (single-param $1))
-     ((params COMMA params-with-default) (mult-param $1 $3)))
+     ((param-with-default) (single-param $1))
+     ((params COMMA param-with-default) (mult-param $1 $3)))
     (param-with-default
      ((ID ASSIGN expression) (a-param-with-default $1 $3)))
     (if-stmt
      ((IF expression COLON statements else-block) (an-if-stmt $2 $4 $5)))
     (else-block
-     ((ELSE COLON statments) (an-else-stmt $3)))
+     ((ELSE COLON statements) (an-else-block $3)))
     (for-stmt
      ((FOR ID IN expression COLON statements) (a-for-stmt $2 $4 $6)))
     (expression
      ((disjunction) (an-expression $1)))
-    (disjuction
+    (disjunction
      ((conjuction) (single-disjunction $1))
      ((disjunction OR conjuction) (mult-disjunction $1 $3)))
     (conjuction
-     ((inversion) (single-conjuction $1))
-     ((conjuction AND inversion) (mult-conjuction $1 $3)))
-    (inverion
+     ((inversion) (single-conjunction $1))
+     ((conjuction AND inversion) (mult-conjunction $1 $3)))
+    (inversion
      ((NOT inversion) (not-inversion $2))
      ((comparison) (a-comparison $1)))
     (comparison
@@ -78,5 +76,42 @@
     (lt-sum
      ((LESS sum) (an-lt-sum $2)))
     (gt-sum
-     ((GREATER sum) (a-gt-sum $2))))))
-    
+     ((GREATER sum) (a-gt-sum $2)))
+    (sum
+     ((sum PLUS term) (add-sum $1 $3))
+     ((sum MINUS term) (sub-sum $1 $3))
+     ((term) (single-sum $1)))
+    (term
+     ((term MUL factor) (mul-term $1 $3))
+     ((term DIV factor) (div-term $1 $3))
+     ((factor) (single-term $1)))
+    (factor
+     ((PLUS factor) (pos-factor $2))
+     ((MINUS factor) (neg-factor $2))
+     ((power) (single-factor $1)))
+    (power
+     ((atom POW factor) (a-pow $1 $3))
+     ((primary) (a-primary $1)))
+    (primary
+     ((atom) (an-atom $1))
+     ((primary OPEN-BRACKET expression CLOSE-BRACKET) (index-access $1 $3))
+     ((primary ZERO-ARG) (zero-arg-func-call $1))
+     ((primary OPEN-PAR arguments CLOSE-PAR) (args-func-call $1 $3)))
+    (arguments
+     ((expression) (single-arguments $1))
+     ((arguments COMMA expression) (mult-arguments $1 $3)))
+    (atom
+     ((ID) $1)
+     ((TRUE) #t)
+     ((FALSE) #f)
+     ((NONE) (list))
+     ((NUM) $1)
+     ((list) $1))
+    (list
+     ((OPEN-BRACKET expressions CLOSE-BRACKET) $2)
+     ((EMPTY-LIST) (list)))
+    (expressions
+     ((expressions COMMA expression) (append $1 (list $3)))
+     ((expression) (list $1))))))
+
+(define lex-and-parse (lambda (input) (a-program (py-parser (lex input)))))
