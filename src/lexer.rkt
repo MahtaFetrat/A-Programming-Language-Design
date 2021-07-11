@@ -11,8 +11,7 @@
                                 LESS GREATER PLUS MINUS MUL POW DIV
                                 OPEN-BRACKET CLOSE-BRACKET ZERO-ARG
                                 TRUE FALSE NONE EMPTY-LIST EOF))
-(define-lex-abbrev :? (repetition 0 1))
-
+                                
 (define py-lexer
   (lexer
    (";" (token-SEMICOL))
@@ -55,7 +54,7 @@
     (token-NUM (string->number lexeme)))
    ((:: (:or (char-range #\A #\Z) (char-range #\a #\z) #\_) (:* (:or (char-range #\A #\Z) (char-range #\a #\z) #\_ (char-range #\0 #\9))))
     (token-ID (string->symbol lexeme)))
-   (whitespace (py-lexer input-port)) ;*************
+   (whitespace (py-lexer input-port))
    ((eof) (token-EOF))))
    
 (define lex (lambda (input) (lambda () (py-lexer input))))
