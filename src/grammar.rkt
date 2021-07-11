@@ -171,6 +171,66 @@
   (a-gt-sum
    (sum sum?)))
 
+;25. Sum → Sum ‘ + ‘ Term | Sum ‘ - ‘ Term | Term
+(define-datatype sum sum?
+  (single-sum
+   (term term?))
+  (add-sum
+   (sum sum?)
+   (term term?))
+  (sub-sum
+   (sum sum?)
+   (term term?)))
+
+;26. Term → Term ‘ ∗ ‘ Factor | Term ‘/‘ Factor | Factor
+(define-datatype term term?
+  (single-term
+   (factor factor?))
+  (mul-term
+   (term term?)
+   (factor factor?))
+  (div-term
+   (term term?)
+   (factor factor?)))
+   
+;27. Factor → ‘ + ‘ Factor | ‘ - ‘ Factor | Power
+(define-datatype factor factor?
+  (single-factor
+   (power power?))
+  (pos-factor
+   (factor factor?))
+  (neg-factor
+   (factor factor?)))
+  
+;28. Power → Atom ‘ ∗ ∗‘ Factor | Primary
+(define-datatype power power?
+  (a-primary
+   (primary primary?))
+  (a-pow
+   (atom atom?)
+   (factor factor?)))
+   
+;29. Primary → Atom | Primary ‘[‘ Expression ‘]‘ | Primary ‘()‘| Primary ‘(‘ Arguments ‘)‘
+(define-datatype primary primary?
+  (an-atom
+   (atom atom?))
+  (index-access
+   (primary primary?)
+   (exp expression?))
+  (zero-arg-func-call
+   (primary primary?))
+  (args-func-call
+   (primary primary?)
+   (arguments arguments?)))
+
+;30. Arguments → Expression | Arguments ‘, ‘ Expression
+(define-datatype arguments arguments?
+  (single-arguments
+   (exp expression?))
+  (mult-arguments
+   (arguments arguments?)
+   (exp expression?)))
+   
 "
 .
 .
