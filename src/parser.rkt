@@ -13,8 +13,8 @@
    (tokens a b)
    (grammar
     (statements
-     ((statement SEMICOL) (single-statement $1))
-     ((statements statements SEMICOL) (mult-statement $1 $2)))
+     ((statement SEMICOL) (single-statements $1))
+     ((statements statements SEMICOL) (mult-statements $1 $2)))
     (statement
      ((simple-stmt) (a-simple-stmt $1))
      ((compound-stmt) (a-compound-stmt $1)))
