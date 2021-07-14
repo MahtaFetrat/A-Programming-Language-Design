@@ -1,6 +1,7 @@
-#lang racket
+#lang eopl
 
-(require "environment.rkt")
+(require "environment.rkt"
+         "grammar.rkt")
 
 "!!!try to keep as few helper functions and datatypes as you can in this file. this module is only for 'value-of-functions'"
 
@@ -12,38 +13,97 @@
 (define value-of-statements
   (lambda (sts scope)
     (cases statements sts
-      (single-statement (st)
-                        (value-of-statement st scope))
       (mult-statements (sts st)
                        (let ((ans (value-of-statements sts scope)))
-                         (if (not (return-message? ans) (break-message? ans) (continue-message? ans))
+                         (if (nor (return-message? ans) (break-message? ans) (continue-message? ans))
                              (value-of-statement st (answer-scope ans))
-                             ans))))))
+                             ans)))
+      (single-statement (st)
+                        (value-of-statement st scope)))))
 
 (define value-of-statement
   (lambda (st scope)
     (cases statement st
-      (;simple-statement
-       (value-of-simple-statement (st scope)))
-      (;compund-statement
-       (value-of-compound-statement (st scope))))))
+      (a-simple-statement
+       (value-of-simple-stmt (st scope)))
+      (a-compund-statement
+       (value-of-compound-stmt (st scope))))))
 
-(define value-of-simple-statement
+(define value-of-simple-stmt
   (lambda (st scope)
-    (cases simple-statement ...
-     ... returns an answer with the message of the simple statement and potential value of return or None)))
+    (cases simple-stmt st
+      (assignment-simple-stmt (assignment) (value-of-assignment assignment scope))
+      (return-simple-stmt (return-stmt) (value-of-return-stmt return-stmt scope))
+      (global-simple-stmt (global-stmt)(value-of-global-stmt global-stmt scope))
+      (pass-stmt () (answer '() '() scope))
+      (break-stmt () (answer '() 'break scope))
+      (continue-stmt () (answer '() 'continue scope)))))
 
-(define value-of-compound-statement
+(define value-of-assignment
+  (lambda (as scope)
+    (cases assignment as
+      (an-assignment (ID exp)
+                     (let ((exp-val (answer-val (value-of-expression exp scope))))
+                       (answer exp-val '() (extend-scope sc ID exp-val)))))))
+
+(deifne value-of-return-stmt
+        (lambda (return-st scope)
+          (cases return-stmt return-st
+            (empty-return-stmt () (answer '() 'return scope))
+            (exp-return-stmt (exp)
+                             (let ((exp-val (answer-val (value-of-expression exp scope))))
+                               (answer exp-val 'return scope))))))
+
+(define value-of-global-stmt
+  (lambda (global-st scope)
+    (cases global-stmt global-st
+      (a-global-stmt (ID)
+                     (answer '() '() (add-to-global-var-list scope ID))))))
+                                 
+(define value-of-compound-stmt
   (lambda (st scope)
-    (cases compound-statement ...
-      (if-st (statements ...)
-             (use value-of-statements to get an answer))
-      (for-st (statements ...)
-              (use value-of-statements to get an answer, also use messages like break, cont, ... to control the loop))
-      (def-func (...)
-        (create a func containing its body and its argument and an empty new-local-scope, add this function to scope, ... )
-      ... all the cases at the end return an answer with value, scope , ...))))
+    (cases compound-stmt st
+      (func-def-comp-stmt (func-def) (value-of-function-def func-def scope))
+      (if-comp-stmt (if-comp-stmt) (value-of-if-stmt if-stmt scope))
+      (for-comp-stmt (for-stmt) (value-of-for-stmt for-stmt scope)))))
 
+(define value-of-function-def
+  (lambda (func-def scope)
+    (cases function-def func-def
+      (params-function-def (ID params sts) (answer (function ID params sts (new-local-scope scope)) '() scope))
+      (zero-param-func-def (ID sts) (answer (function ID '() sts (new-local-scope scope)) '() scope)))))
+
+(define value-of-if-stmt
+  (lambda (if-st scope)
+    (cases if-stmt if-st
+      (an-if-stmt (exp sts else-block)
+                  (let ((ans (value-of-expression exp scope)))
+                    (if (answer-val ans)
+                        (value-of-statements sts scope)
+                        (value-of-else-block else-block scope)))))))
+
+(define value-of-else-block
+ (lambda (else-bl scope)
+   (cases else-block else-bl
+     (an-else-block (stss)
+                    (value-of-statements sts scope)))))
+
+(define value-of-for-stmt
+  (lambda (for-st scope)
+    (cases for-stmt sor-st
+      (a-for-stmt (ID exp sts)
+                  (let ((iterable (answer-val (value-of-exp exp))))
+                    (value-of-for-bodies ID iterable sts scope))))))
+
+(define value-of-for-bodies
+  (lambda (ID iterable sts scope)
+    (if (null? iterable)
+        (answer '() '() scope)
+        (let ((ans (value-of-statements sts (extend-scope scope ID (car iterable)))))
+          (if (break-message? ans)
+              (answer '() '() (answer-scope ans))
+              (value-of-for-bodies ID (cdr iterable) sts (answer-scope ans)))))))
+                  
 (define value-of-expression
   (lambda (exp scope)
     (cases expression exp
