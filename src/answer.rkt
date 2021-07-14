@@ -3,6 +3,8 @@
 (require "environment.rkt"
          "grammar.rkt")
 
+(provide (all-defined-out))
+
 (define expval?
   (lambda (e) (or (number? e) (boolean? e) (null? e) (py-list? e))))
 
@@ -47,12 +49,12 @@
 (define cmp-res
   (lambda (cmp-ans)
     (cases cmp-answer cmp-ans
-      (a-cmp-ans (res rh) res))))
+      (a-cmp-answer (res rh) res))))
 
 (define cmp-right-hand-operand
   (lambda (cmp-ans)
     (lambda (cmp-ans)
       (cases cmp-answer cmp-ans
-        (a-cmp-ans (res rh) rh)))))
+        (a-cmp-answer (res rh) rh)))))
     
    
