@@ -1,9 +1,6 @@
 #lang eopl
 
-(provide apply-scope ;environment is internal to the scope
-         extend-scope
-         new-local-scope
-         new-global-scope)
+(provide (all-defined-out))
 
 ;environment datatype ------------------------------------------------------------------------
 ;environment is a list of pairs of variable names and their bound value
@@ -68,5 +65,4 @@
   (lambda (sc var)
     (cases scope sc
       (global-scope () sc)
-      (local-scope (global-var-list env) (loacal-scope (cons var global-var-list) env)))))
-   
+      (local-scope (global-var-list env) (local-scope (cons var global-var-list) env)))))
