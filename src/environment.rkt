@@ -54,13 +54,19 @@
 (define extend-scope
   (lambda (sc var val)
     (cases scope sc
-      (global-scope () (set! globe (extend-env globe var val)))
+      (global-scope () (begin
+                         (set! globe (extend-env globe var val))
+                         sc))
       (local-scope (global-var-list env)
-        ((cond
-           ((member var global-var-list) (set! globe (extend-env globe var val)))
-           (else (extend-env env var val))))))))
-    
-  
+                   (cond
+                     ((member var global-var-list) (begin
+                                                     (set! globe (extend-env globe var val))
+                                                     sc))
+                     (else (local-scope (global-var-list (extend-env env var val)))))))))
 
-
-
+(define add-to-global-var-list
+  (lambda (sc var)
+    (cases scope sc
+      (global-scope () sc)
+      (local-scope (global-var-list env) (loacal-scope (cons var global-var-list) env)))))
+   
