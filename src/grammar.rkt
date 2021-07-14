@@ -9,9 +9,9 @@
 
 ;2. Statements → Statement ‘; ‘ | Statements Statement ‘; ‘
 (define-datatype statements statements?
-  (single-statement
+  (single-statements
    (statement statement?))
-  (mult-statement
+  (mult-statements
    (statements statements?)
    (statement statement?)))
 
