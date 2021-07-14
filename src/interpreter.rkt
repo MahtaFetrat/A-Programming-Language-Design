@@ -35,7 +35,7 @@
       (assignment-simple-stmt (assignment) (value-of-assignment assignment scope))
       (return-simple-stmt (return-stmt) (value-of-return-stmt return-stmt scope))
       (global-simple-stmt (global-stmt)(value-of-global-stmt global-stmt scope))
-      (pass-stmt () (answer '() '() scope))
+      (pass-stmt () (answer '() '- scope))
       (break-stmt () (answer '() 'break scope))
       (continue-stmt () (answer '() 'continue scope)))))
 
@@ -44,12 +44,12 @@
     (cases assignment as
       (an-assignment (ID exp)
                      (let ((exp-val (answer-val (value-of-expression exp scope))))
-                       (answer exp-val '() (extend-scope sc ID exp-val)))))))
+                       (answer exp-val '- (extend-scope sc ID exp-val)))))))
 
 (deifne value-of-return-stmt
         (lambda (return-st scope)
           (cases return-stmt return-st
-            (empty-return-stmt () (answer '() 'return scope))
+            (empty-return-stmt () (answer '- 'return scope))
             (exp-return-stmt (exp)
                              (let ((exp-val (answer-val (value-of-expression exp scope))))
                                (answer exp-val 'return scope))))))
@@ -58,7 +58,7 @@
   (lambda (global-st scope)
     (cases global-stmt global-st
       (a-global-stmt (ID)
-                     (answer '() '() (add-to-global-var-list scope ID))))))
+                     (answer '() '- (add-to-global-var-list scope ID))))))
                                  
 (define value-of-compound-stmt
   (lambda (st scope)
@@ -72,10 +72,10 @@
     (cases function-def func-def
       (params-function-def (ID params sts)
                            (let ((new-func (function ID params sts (new-local-scope scope))))
-                             (answer '() '() (extend-scope scope ID new-func))))
+                             (answer '() '- (extend-scope scope ID new-func))))
       (zero-param-func-def (ID sts)
                            (let ((new-func (function ID '() sts (new-local-scope scope))))
-                             (answer '() '() (extend-scope scope ID new-func)))))))
+                             (answer '() '- (extend-scope scope ID new-func)))))))
 
 (define value-of-if-stmt
   (lambda (if-st scope)
@@ -102,10 +102,10 @@
 (define value-of-for-bodies
   (lambda (ID iterable sts scope)
     (if (null? iterable)
-        (answer '() '() scope)
+        (answer '() '- scope)
         (let ((ans (value-of-statements sts (extend-scope scope ID (car iterable)))))
           (if (break-message? ans)
-              (answer '() '() (answer-scope ans))
+              (answer '() '- (answer-scope ans))
               (value-of-for-bodies ID (cdr iterable) sts (answer-scope ans)))))))
                   
 (define value-of-expression
@@ -130,7 +130,7 @@
       (mult-disjunction (disj conj)
                         (let ((exp-val1 (answer-val (value-of-disjunction disj scope)))
                               (exp-val2 (answer-val (value-of-conjunction conj scope))))
-                          (answer (or exp-val1 exp-val2) '() scope))))))
+                          (answer (or exp-val1 exp-val2) '- scope))))))
 
 (define value-of-conjunction
   (lambda (conj scope)
@@ -140,65 +140,64 @@
       (mult-conjunction (conj inv)
                         (let ((exp-val1 (answer-val (value-of-conjunction conj scope)))
                               (exp-val2 (answer-val (value-of-inversion inv scope))))
-                          (answer (and exp-val1 exp-val2) '() scope))))))
+                          (answer (and exp-val1 exp-val2) '- scope))))))
 
 (define value-of-inversion
   (lambda (inv scope)
     (cases inversion inv
       (not-inversion (inv)
                      (let ((exp-val1 (answer-val (value-of-inversion inv scope)))
-                           (answer (not exp-val1) '() scope))))
+                           (answer (not exp-val1) '- scope))))
       (a-comparison (comp)
                     (value-of-comparison comp scope)))))
 
 (define value-of-comparison
   (lambda (comp scope)
     (cases comparison comp
-      (mult-comparison (sum cmp-op-sum-p)
-                       (let ((val1 (value-of-sum sum scope))
-                             (val2 (value-of-compare-op-sum-pairs cmp-op-sum-p scope)))
-                         ...))
+      (mult-comparison (sum cmp-op-sum-ps)
+                       (let ((left-hand-operand (answer-val (value-of-sum sum scope))))
+                         (answer (cmp-res (value-of-compare-op-sum-pairs left-hand-operand cmp-op-sum-ps scope)) '- scope)))
       (single-comparison (sum)
-                         (value-of-sum sum scope))
+                         (value-of-sum sum scope)))))
 
 (define value-of-compare-op-sum-pairs
-  (lambda (cmp-op-sum-ps scope)
+  (lambda (left-hand-operand cmp-op-sum-ps scope)
     (cases compare-op-sum-pairs cmp-op-sum-ps
       (single-compare-op-sum-pairs (cmp-op-sum-p)
-                                   (let ((val (value-of-compare-op-sum-pair cmp-op-sum-p scope)))
-                                     ...))
+                                   (value-of-compare-op-sum-pair left-hand-operand cmp-op-sum-p scope))
       (mult-compare-op-sum-pairs (cmp-op-sum-ps cmp-op-sum-p)
-                                 (let ((val1 (value-of-compare-op-sum-pairs cmp-op-sum-ps scope))
-                                       (val2 (value-of-compare-op-sum-pair cmp-op-sum-p scope)))
-                                   ...)))))
+                                 (let ((cmp-ans (value-of-compare-op-sum-pairs left-hand-operand cmp-op-sum-ps scope)))
+                                   (if (cmp-res cmp-ans)
+                                       (value-of-compare-op-sum-pair (cmp-right-hand-operand cmp-ans) cmp-op-sum-p scope)
+                                       cmp-ans))))))
 
 (define value-of-compare-op-sum-pair
-  (lambda (cmp-op-sum-p scope)
+  (lambda (left-hand-operand cmp-op-sum-p scope)
     (cases compare-op-sum-pair cmp-op-sum-p
       (eq-sum-pair (eq-sum)
-                   ...)
+                   (value-of-eq-sum left-hand-operand eq-sum scope))
       (lt-sum-pair (lt-sum)
-                   ...)
+                   (value-of-lt-sum left-hand-operand lt-sum scope))
       (gt-sum-pair (gt-sum)
-                   ...))))
+                   (value-of-gt-sum left-hand-operand gt-sum scope)))))
 
-(define value-of-eq-sum-pair
-  (lambda (pair scope)
-    (cases eq-sum-pair pair
+(define value-of-eq-sum
+  (lambda (left-hand-operand eq-s scope)
+    (cases eq-sum eq-s
       (an-eq-sum (sum)
-                 ...))))
+                 (cmp-answer (equal? left-hand-operand sum) sum)))))
 
-(define value-of-lt-sum-pair
-  (lambda (pair scope)
-    (cases lt-sum-pair pair
+(define value-of-lt-sum
+  (lambda (left-hand-operand lt-s scope)
+    (cases lt-sum lt-s
       (an-lt-sum (sum)
-                 ...))))
+                 (cmp-answer (< left-hand-operand sum) sum)))))
 
-(define value-of-gt-sum-pair
-  (lambda (pair scope)
-    (cases gt-sum-pair pair
+(define value-of-gt-sum
+  (lambda (left-hand-operand gt-s scope)
+    (cases gt-sum gt-s
       (a-gt-sum (sum)
-                 ...))))
+                (cmp-answer (> left-hand-operand sum) sum)))))
 
 (define value-of-sum
   (lambda (sum scope)
@@ -206,11 +205,11 @@
       (add-sum (sum term)
                (let ((exp-val1 (answer-val (value-of-sum sum scope)))
                      (exp-val2 (answer-val (value-of-term term scope))))
-                 (answer (+ exp-val1 exp-val2) '() scope)))
+                 (answer (+ exp-val1 exp-val2) '- scope)))
       (sub-sum (sum term)
                (let ((exp-val1 (answer-val (value-of-sum sum scope)))
                      (exp-val2 (answer-val (value-of-term term scope))))
-                 (answer (- exp-val1 exp-val2) '() scope)))
+                 (answer (- exp-val1 exp-val2) '- scope)))
       (single-sum (term)
                   (value-of-term term scope)))))
 
@@ -220,11 +219,11 @@
       (mul-term (term factor)
                (let ((exp-val1 (answer-val (value-of-sum sum scope)))
                      (exp-val2 (answer-val (value-of-term term scope))))
-                 (answer (* exp-val1 exp-val2) '() scope)))
+                 (answer (* exp-val1 exp-val2) '- scope)))
       (div-term (term factor)
                (let ((exp-val1 (answer-val (value-of-sum sum scope)))
                      (exp-val2 (answer-val (value-of-term term scope))))
-                 (answer (/ exp-val1 exp-val2) '() scope)))
+                 (answer (/ exp-val1 exp-val2) '- scope)))
       (single-term (factor)
                    (value-of-factor factor scope)))))
 
@@ -232,9 +231,9 @@
   (lambda (fact scope)
     (cases factor fact
       (pos-factor (factor)
-                  (answer factor '() scope))
+                  (answer factor '- scope))
       (neg-factor (factor)
-                  (answer (- factor) '() scope))
+                  (answer (- factor) '- scope))
       (single-factor (pow)
                      (value-of-pow pow scope)))))
 
@@ -242,7 +241,7 @@
   (lambda (pow scope)
     (cases power power
       (a-pow (atom factor)
-                  (answer (expt atom factor) '() scope))
+                  (answer (expt atom factor) '- scope))
       (a-primary (primary)
                  (value-of-primary primary scope)))))
 
@@ -257,15 +256,15 @@
                      (value-of-expression (list-ref p-list exp-val) scope)))
       (zero-arg-func-call (primary)
                           (let ((func (answer-val (value-of-primary primary scope))))
-                            (answer (apply-func func '() scope) '() scope)))
+                            (answer (apply-func func '() scope) '- scope)))
       (args-func-call (primary args)
                           (let ((func (answer-val (value-of-primary primary scope))))
-                            (answer (apply-func func args scope) '() scope))))))
+                            (answer (apply-func func args scope) '- scope))))))
 (define value-of-atom
   (lambda (atom scope)
     (if (symbol? atom)
-        (answer (apply-scope scope atom) '() scope)
-        (answer atom '() scope))))
+        (answer (apply-scope scope atom) '- scope)
+        (answer atom '- scope))))
     
 
       
