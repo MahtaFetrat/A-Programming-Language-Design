@@ -70,8 +70,12 @@
 (define value-of-function-def
   (lambda (func-def scope)
     (cases function-def func-def
-      (params-function-def (ID params sts) (answer (function ID params sts (new-local-scope scope)) '() scope))
-      (zero-param-func-def (ID sts) (answer (function ID '() sts (new-local-scope scope)) '() scope)))))
+      (params-function-def (ID params sts)
+                           (let ((new-func (function ID params sts (new-local-scope scope))))
+                             (answer '() '() (extend-scope scope ID new-func))))
+      (zero-param-func-def (ID sts)
+                           (let ((new-func (function ID '() sts (new-local-scope scope))))
+                             (answer '() '() (extend-scope scope ID new-func)))))))
 
 (define value-of-if-stmt
   (lambda (if-st scope)
@@ -155,8 +159,7 @@
                              (val2 (value-of-compare-op-sum-pairs cmp-op-sum-p scope)))
                          ...))
       (single-comparison (sum)
-                         (let ((val (value-of-sum sum scope)))
-                           ...)))))
+                         (value-of-sum sum scope))
 
 (define value-of-compare-op-sum-pairs
   (lambda (cmp-op-sum-ps scope)
@@ -201,48 +204,68 @@
   (lambda (sum scope)
     (cases sum sum
       (add-sum (sum term)
-               ...)
+               (let ((exp-val1 (answer-val (value-of-sum sum scope)))
+                     (exp-val2 (answer-val (value-of-term term scope))))
+                 (answer (+ exp-val1 exp-val2) '() scope)))
       (sub-sum (sum term)
-               ...)
+               (let ((exp-val1 (answer-val (value-of-sum sum scope)))
+                     (exp-val2 (answer-val (value-of-term term scope))))
+                 (answer (- exp-val1 exp-val2) '() scope)))
       (single-sum (term)
-                  ...))))
+                  (value-of-term term scope)))))
 
 (define value-of-term
   (lambda (term scope)
     (cases term term
       (mul-term (term factor)
-                ...)
+               (let ((exp-val1 (answer-val (value-of-sum sum scope)))
+                     (exp-val2 (answer-val (value-of-term term scope))))
+                 (answer (* exp-val1 exp-val2) '() scope)))
       (div-term (term factor)
-                ...)
+               (let ((exp-val1 (answer-val (value-of-sum sum scope)))
+                     (exp-val2 (answer-val (value-of-term term scope))))
+                 (answer (/ exp-val1 exp-val2) '() scope)))
       (single-term (factor)
-                   ...))))
+                   (value-of-factor factor scope)))))
 
 (define value-of-factor
-  (lambda (factor scope)
-    (cases factor factor
+  (lambda (fact scope)
+    (cases factor fact
       (pos-factor (factor)
-                  ...)
+                  (answer factor '() scope))
       (neg-factor (factor)
-                  ...)
+                  (answer (- factor) '() scope))
       (single-factor (pow)
-                     ...))))
+                     (value-of-pow pow scope)))))
 
 (define value-of-power
-  (lambda (power scope)
+  (lambda (pow scope)
     (cases power power
       (a-pow (atom factor)
-             ...)
+                  (answer (expt atom factor) '() scope))
       (a-primary (primary)
-                 ...))))
+                 (value-of-primary primary scope)))))
 
 (define value-of-primary
-  (lambda (primary scope)
-    (cases primary primary
+  (lambda (prim scope)
+    (cases primary prim
       (an-atom (atom)
-               ...)
+               (value-of-atom atom scope))
       (index-cases (primary exp)
-                   ...)
+                   (let ((p-list (answer-val (value-of-primary primary scope)))
+                         (exp-val (answer-val (value-of-expression exp scope))))
+                     (value-of-expression (list-ref p-list exp-val) scope)))
       (zero-arg-func-call (primary)
-                          ...)
+                          (let ((func (answer-val (value-of-primary primary scope))))
+                            (answer (apply-func func '() scope) '() scope)))
       (args-func-call (primary args)
-                      ...))))
+                          (let ((func (answer-val (value-of-primary primary scope))))
+                            (answer (apply-func func args scope) '() scope))))))
+(define value-of-atom
+  (lambda (atom scope)
+    (if (symbol? atom)
+        (answer (apply-scope scope atom) '() scope)
+        (answer atom '() scope))))
+    
+
+      
