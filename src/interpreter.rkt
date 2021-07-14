@@ -107,45 +107,45 @@
 (define value-of-expression
   (lambda (exp scope)
     (cases expression exp
-      (an-expression (exp)
-                     (let ((val (value-of-disjunction exp scope)))
-                       ...))
-      (;a function call
+      (an-expression (disj)
+                     (value-of-disjunction disj scope)))))
+"
+       a function call
        the apply-function procedure must do the following:
            1- extend the local scope with the function itself for recursive call (the function value itself, not globally, as python does, 'cause changes to function name don't effect the globe unless defined as 'global' later)
            2-extend the local scope with the default values, make sure to do this step after 1, 'cause arguments can overrite function name with another value, just as in python
            3-the function body, containing 'Statements' is evaluated with the local scope
            4-finally note that function scopes, since they are local, dont influence the outer body after return. the influence on the globe will be properly applied btw. in other words, dont pass the scope in the answer of this function call to other sibling statements (unlike as we did in value-of-satements)))))
+"
 
 (define value-of-disjunction
   (lambda (disj scope)
     (cases disjunction disj
-      (single-disjunction (disj)
-                          (let ((val (value-of-conjunction exp scope)))
-                            ...))
+      (single-disjunction (conj)
+                          (value-of-conjunction))
       (mult-disjunction (disj conj)
-                        (let ((val1 (value-of-disjunction disj scope))
-                              (val2 (value-of-conjunction conj scope)))
-                          ...)))))
+                        (let ((exp-val1 (answer-val (value-of-disjunction disj scope)))
+                              (exp-val2 (answer-val (value-of-conjunction conj scope))))
+                          (answer (or exp-val1 exp-val2) '() scope))))))
 
 (define value-of-conjunction
   (lambda (conj scope)
     (cases conjunction conj
-      (single-conjunction (conj)
-                          ...)
+      (single-conjunction (inv)
+                          (value-of-inversion inv scope))
       (mult-conjunction (conj inv)
-                        (let ((val1 (value-of-conjunction conj scope))
-                              (val2 (value-of-inversion inv scope))))
-                        ...))))
+                        (let ((exp-val1 (answer-val (value-of-conjunction conj scope)))
+                              (exp-val2 (answer-val (value-of-inversion inv scope))))
+                          (answer (and exp-val1 exp-val2) '() scope))))))
 
 (define value-of-inversion
   (lambda (inv scope)
     (cases inversion inv
       (not-inversion (inv)
-                     ...)
+                     (let ((exp-val1 (answer-val (value-of-inversion inv scope)))
+                           (answer (not exp-val1) '() scope))))
       (a-comparison (comp)
-                    (let ((val (value-of-comparison comp scope)))
-                      ...)))))
+                    (value-of-comparison comp scope)))))
 
 (define value-of-comparison
   (lambda (comp scope)
