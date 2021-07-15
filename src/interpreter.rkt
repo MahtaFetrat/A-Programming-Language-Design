@@ -28,7 +28,7 @@
       (a-compound-stmt (st)
        (value-of-compound-stmt st scope))
       (a-simple-stmt (st)
-       (value-of-simple-stmt (st scope)))
+       (value-of-simple-stmt st scope))
       (a-print-stmt (st)
                     (value-of-print (st scope))))))
 
@@ -38,15 +38,15 @@
       (assignment-simple-stmt (assignment) (value-of-assignment assignment scope))
       (return-simple-stmt (return-stmt) (value-of-return-stmt return-stmt scope))
       (global-simple-stmt (global-stmt)(value-of-global-stmt global-stmt scope))
-      (pass-stmt () (an-answer '() '- scope))
-      (break-stmt () (an-answer '() 'break scope))
-      (continue-stmt () (an-answer '() 'continue scope)))))
+      (pass-stmt () (an-answer (list) '- scope))
+      (break-stmt () (an-answer (list) 'break scope))
+      (continue-stmt () (an-answer (list) 'continue scope)))))
 
 (define value-of-assignment
   (lambda (as scope)
     (cases assignment as
       (an-assignment (ID exp)
-                     (an-answer '() '- (extend-scope scope ID (a-thunk exp (get-thunk-scope scope))))))))
+                     (an-answer (list) '- (extend-scope scope ID (a-thunk exp (get-thunk-scope scope))))))))
 
 (define value-of-return-stmt
         (lambda (return-st scope)
@@ -60,7 +60,7 @@
   (lambda (global-st scope)
     (cases global-stmt global-st
       (a-global-stmt (ID)
-                     (an-answer '() '- (add-to-global-var-list scope ID))))))
+                     (an-answer (list) '- (add-to-global-var-list scope ID))))))
                                  
 (define value-of-compound-stmt
   (lambda (st scope)
@@ -74,10 +74,10 @@
     (cases function-def func-def
       (params-func-def (ID params sts)
                            (let ((new-func (a-function ID params sts (new-local-scope scope))))
-                             (an-answer '() '- (extend-scope scope ID new-func))))
+                             (an-answer (list) '- (extend-scope scope ID new-func))))
       (zero-param-func-def (ID sts)
-                           (let ((new-func (a-function ID '() sts (new-local-scope scope))))
-                             (an-answer '() '- (extend-scope scope ID new-func)))))))
+                           (let ((new-func (a-function ID (list) sts (new-local-scope scope))))
+                             (an-answer (list) '- (extend-scope scope ID new-func)))))))
 
 (define value-of-if-stmt
   (lambda (if-st scope)
@@ -104,10 +104,10 @@
 (define value-of-for-bodies
   (lambda (ID iterable sts scope)
     (if (null? iterable)
-        (an-answer '() '- scope)
+        (an-answer (list) '- scope)
         (let ((ans (value-of-statements sts (extend-scope scope ID (car iterable)))))
           (if (break-message? ans)
-              (an-answer '() '- (answer-scope ans))
+              (an-answer (list) '- (answer-scope ans))
               (value-of-for-bodies ID (cdr iterable) sts (answer-scope ans)))))))
                   
 (define value-of-expression
@@ -260,7 +260,7 @@
                      (value-of-expression (list-ref p-list exp-val) scope)))
       (zero-arg-func-call (primary)
                           (let ((func (answer-val (value-of-primary primary scope))))
-                            (an-answer (apply-function func '() scope) '- scope)))
+                            (an-answer (apply-function func (list) scope) '- scope)))
       (args-func-call (primary args)
                           (let ((func (answer-val (value-of-primary primary scope))))
                             (an-answer (apply-function func args scope) '- scope))))))
@@ -294,7 +294,7 @@
       (a-print (atom)
                (begin
                  (display atom)
-                 (an-answer '() '- scope))))))
+                 (an-answer (list) '- scope))))))
 
 (provide (all-defined-out))
 
