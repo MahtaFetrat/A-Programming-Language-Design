@@ -120,7 +120,7 @@
      ((PRINT OPEN-PAR atom CLOSE-PAR) (print-atom $3))
      ((PRINT OPEN-PAR atoms CLOSE-PAR) (print-atoms $3)))
     (atoms
-     ((atom) (list $1))
+     ((atom COMMA atom) (list $1 $3))
      ((atoms COMMA atom) (append $1 (list $3)))))))
 
 (define lex-and-parse (lambda (input) (a-program (py-parser (lex input)))))
