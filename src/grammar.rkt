@@ -2,7 +2,7 @@
 
 (provide (all-defined-out))
 
-;1. P rogram → Statements EOF
+;1. Program → Statements EOF
 (define-datatype program program?
   (a-program
    (statements statements?)))
@@ -230,3 +230,8 @@
 
 ;33. Expressions → Expressions ‘, ‘ Expression | Expression
 (define expressions? (lambda (e) (and (not (null? e)) (list-of expression?))))
+
+;34. Print → ‘print (‘ Atom ‘)‘ | ‘print (‘ [Atoms] ‘)‘
+(define-datatype print print?
+  (a-print
+   (atom atom?)))
