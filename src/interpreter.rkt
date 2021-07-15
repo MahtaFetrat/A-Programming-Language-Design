@@ -215,7 +215,12 @@
                          (scope (answer-scope ans2)))
                      (cond
                        ((boolean? exp-val1) (an-answer (or exp-val1 exp-val2) '- scope))
-                       ((py-list? exp-val1) (an-answer (append exp-val1 exp-val2) '- scope))
+                       ((eval-list? exp-val1)
+                        (cases eval-list exp-val1
+                          (an-eval-list (py-list1 sc1)
+                                        (cases eval-list exp-val2
+                                          (an-eval-list (py-list2 sc2)
+                                                        (an-answer (an-eval-list (append py-list1 py-list2) scope) '- scope))))))
                        (else (an-answer (+ exp-val1 exp-val2) '- scope)))))))
       (sub-sum (sum term)
                (let ((ans1 (value-of-sum sum scope)))
