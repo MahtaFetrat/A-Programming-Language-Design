@@ -112,6 +112,8 @@
      ((EMPTY-LIST) (list)))
     (expressions
      ((expressions COMMA expression) (append $1 (list $3)))
-     ((expression) (list $1))))))
+     ((expression) (list $1)))
+    (print
+     ((PRINT OPEN-PAR atom CLOSE-PAR) (a-print $3))))))
 
 (define lex-and-parse (lambda (input) (a-program (py-parser (lex input)))))
