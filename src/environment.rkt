@@ -71,8 +71,11 @@
     (cases scope sc
       (global-scope () (local-scope '() globe))
       (local-scope (global-var-list env)
-                   (local-scope '() (foldl (lambda (x y) (extend-env x (apply-env globe y))) env global-var-list))))))
-  
+                   (local-scope '() (add-global-vars-to-env global-var-list env))))))
 
-
-
+(define add-global-vars-to-env
+  (lambda (global-var-list env)
+    (if (null? global-var-list)
+        env
+        (add-global-vars-to-env (cdr global-var-list) (extend-env env (car global-var-list) (apply-env globe (car global-var-list)))))))
+ 
