@@ -202,7 +202,7 @@
     (cases gt-sum gt-s
       (a-gt-sum (sum)
                 (let ((ans (value-of-sum sum scope)))
-                  (a-cmp-answer(> left-hand-operand (answer-val ans)) (answer-val ans) (answer-scope ans)))))))
+                  (a-cmp-answer (> left-hand-operand (answer-val ans)) (answer-val ans) (answer-scope ans)))))))
 
 (define value-of-sum
   (lambda (s scope)
@@ -435,9 +435,8 @@
 
 (define cmp-right-hand-operand
   (lambda (cmp-ans)
-    (lambda (cmp-ans)
-      (cases cmp-answer cmp-ans
-        (a-cmp-answer (res rh sc) rh)))))
+    (cases cmp-answer cmp-ans
+        (a-cmp-answer (res rh sc) rh))))
 
 (define cmp-scope
   (lambda (cmp-ans)
