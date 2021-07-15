@@ -1,77 +1,360 @@
 #lang racket
-
 (require eopl)
+
+(require "environment.rkt"
+         "grammar.rkt"
+         "answer.rkt"
+         "thunk.rkt")
+
 (provide (all-defined-out))
 
-;environment datatype ------------------------------------------------------------------------
-;environment is a list of pairs of variable names and their bound value
-(define environment? (list-of pair?))
+(define value-of-program
+  (lambda (pgm)
+    (cases program pgm
+      (a-program (statements) (begin
+                                (value-of-statements statements (new-global-scope))
+                                (displayln "program terminated"))))))
 
-(define empty-env (lambda () (list)))
+(define value-of-statements
+  (lambda (sts scope)
+    (cases statements sts
+      (mult-statements (sts st)
+                       (let ((ans (value-of-statements sts scope)))
+                         (if (not (or (return-message? ans) (break-message? ans) (continue-message? ans)))
+                             (value-of-statement st (answer-scope ans))
+                             ans)))
+      (single-statements (st)
+                        (value-of-statement st scope)))))
 
-(define apply-env
-  (lambda (env var)
-    (let ((found (assoc var env)))
-      (if found
-          (cdr found)
-          (eopl:error 'apply-env "no bound value for variable ~s" var)))))
+(define value-of-statement
+  (lambda (st scope)
+    (cases statement st
+      (a-compound-stmt (st)
+       (value-of-compound-stmt st scope))
+      (a-simple-stmt (st)
+       (value-of-simple-stmt st scope))
+      (a-print-stmt (st)
+                    (value-of-print st scope)))))
 
-(define extend-env
-  (lambda (env var val)
-    (cons (cons var val) env))) ;because 'assoc' will always return the first pair found
+(define value-of-simple-stmt
+  (lambda (st scope)
+    (cases simple-stmt st
+      (assignment-simple-stmt (assignment) (value-of-assignment assignment scope))
+      (return-simple-stmt (return-stmt) (value-of-return-stmt return-stmt scope))
+      (global-simple-stmt (global-stmt)(value-of-global-stmt global-stmt scope))
+      (pass-stmt () (an-answer (list) '- scope))
+      (break-stmt () (an-answer (list) 'break scope))
+      (continue-stmt () (an-answer (list) 'continue scope)))))
 
+(define value-of-assignment
+  (lambda (as scope)
+    (cases assignment as
+      (an-assignment (ID exp)
+                     (an-answer (list) '- (extend-scope scope ID (a-thunk exp (copy-of-scope scope))))))))
 
+(define value-of-return-stmt
+        (lambda (return-st scope)
+          (cases return-stmt return-st
+            (empty-return-stmt () (an-answer '- 'return scope))
+            (exp-return-stmt (exp)
+                             (let ((ans (value-of-expression exp scope)))
+                               (an-answer (answer-val ans) 'return (answer-scope ans)))))))
 
-(define globe (empty-env))
+(define value-of-global-stmt
+  (lambda (global-st scope)
+    (cases global-stmt global-st
+      (a-global-stmt (ID)
+                     (an-answer (list) '- (add-to-global-var-list scope ID))))))
+                                 
+(define value-of-compound-stmt
+  (lambda (st scope)
+    (cases compound-stmt st
+      (func-def-comp-stmt (func-def) (value-of-function-def func-def scope))
+      (if-comp-stmt (if-stmt) (value-of-if-stmt if-stmt scope))
+      (for-comp-stmt (for-stmt) (value-of-for-stmt for-stmt scope)))))
 
-;scope datatype ------------------------------------------------------------------------------
-;we are either in the global scope or somewhere in the scope of a function
-(define-datatype scope scope?
-  (global-scope)
-  (local-scope
-    (global-var-list (list-of symbol?)) ;list of variables defined as 'global'
-    (env environment?))) ;local env of the function
+(define value-of-function-def
+  (lambda (func-def scope)
+    (cases function-def func-def
+      (params-func-def (ID params sts)
+                           (let ((new-func (a-function ID params sts (new-local-scope scope))))
+                             (an-answer (list) '- (extend-scope scope ID new-func))))
+      (zero-param-func-def (ID sts)
+                           (let ((new-func (a-function ID (list) sts (new-local-scope scope))))
+                             (an-answer (list) '- (extend-scope scope ID new-func)))))))
 
-(define new-global-scope (lambda () (global-scope)))
-(define new-local-scope (lambda (sc) (cases scope sc
-                                       (global-scope () (local-scope (list) (empty-env)))
-                                       (local-scope (gvl env) (local-scope (list) (env))))))
+(define value-of-if-stmt
+  (lambda (if-st scope)
+    (cases if-stmt if-st
+      (an-if-stmt (exp sts else-block)
+                  (let ((ans (value-of-expression exp scope)))
+                    (if (answer-val ans)
+                        (value-of-statements sts (answer-scope ans))
+                        (value-of-else-block else-block (answer-scope ans))))))))
 
-;gets the proper local or global value for a variable
-(define apply-scope
-  (lambda (sc var)
-    (cases scope sc
-      (global-scope () (apply-env globe var))
-      (local-scope (global-var-list env)
-        (cond
-          ((member var global-var-list) (apply-env globe var))
-          ((assoc var env) (apply-env var env))
-          (else (eopl:error 'apply-scope "no bound value for variable ~s" var)))))))
+(define value-of-else-block
+ (lambda (else-bl scope)
+   (cases else-block else-bl
+     (an-else-block (sts)
+                    (value-of-statements sts scope)))))
 
-;extends either the local env or the globe env based on wether it is 'global', in the global scope or not
-(define extend-scope
-  (lambda (sc var val)
-    (cases scope sc
-      (global-scope () (begin
-                         (set! globe (extend-env globe var val))
-                         sc))
-      (local-scope (global-var-list env)
-                   (cond
-                     ((member var global-var-list) (begin
-                                                     (set! globe (extend-env globe var val))
-                                                     sc))
-                     (else (local-scope (global-var-list (extend-env env var val)))))))))
+(define value-of-for-stmt
+  (lambda (for-st scope)
+    (cases for-stmt for-st
+      (a-for-stmt (ID exp sts)
+                  (let ((ans (value-of-expression exp)))
+                    (cases eval-list (answer-val ans)
+                      (an-eval-list (py-list sc)
+                                    (value-of-for-bodies ID py-list sc sts (answer-scope ans)))))))))
 
-(define add-to-global-var-list
-  (lambda (sc var)
-    (cases scope sc
-      (global-scope () sc)
-      (local-scope (global-var-list env) (local-scope (cons var global-var-list) env)))))
+(define value-of-for-bodies
+  (lambda (ID iterable stored-scope sts scope)
+    (if (null? iterable)
+        (an-answer (list) '- scope)
+        (let ((ans1 (value-of-expression (car iterable) stored-scope)))
+          (let ((ans2 (value-of-statements sts (extend-scope scope ID (answer-val ans1)))))
+            (if (break-message? ans2)
+                (an-answer (list) '- (answer-scope ans2))
+                (value-of-for-bodies ID (cdr iterable) stored-scope sts (answer-scope ans2))))))))
+                  
+(define value-of-expression
+  (lambda (exp scope)
+    (cases expression exp
+      (an-expression (disj)
+                     (value-of-disjunction disj scope)))))
 
-(define get-thunk-scope
-  (lambda (sc)
-    (cases scope sc
-      (global-scope () (local-scope '() globe))
-      (local-scope (global-var-list env)
-                   (local-scope '() (foldl (lambda (x y) (extend-env x (apply-env globe y))) env global-var-list))))))
-  
+(define value-of-disjunction
+  (lambda (disj scope)
+    (cases disjunction disj
+      (single-disjunction (conj)
+                          (value-of-conjunction conj scope))
+      (mult-disjunction (disj conj)
+                        (let ((ans1 (value-of-disjunction disj scope)))
+                          (let ((ans2 (value-of-conjunction conj (answer-scope ans1))))
+                            (an-answer (or (answer-val ans1) (answer-val ans2)) '- (answer-scope ans2))))))))
+
+(define value-of-conjunction
+  (lambda (conj scope)
+    (cases conjunction conj
+      (single-conjunction (inv)
+                          (value-of-inversion inv scope))
+      (mult-conjunction (conj inv)
+                        (let ((ans1 (value-of-conjunction conj scope)))
+                          (let ((ans2 (value-of-inversion inv (answer-scope ans1))))
+                            (an-answer (and (answer-val ans1) (answer-val ans2)) '- (answer-scope ans2))))))))
+
+(define value-of-inversion
+  (lambda (inv scope)
+    (cases inversion inv
+      (not-inversion (inv)
+                     (let ((ans (value-of-inversion inv scope)))
+                       (an-answer (not (answer-val ans) '- (answer-scope ans)))))
+      (a-comparison (comp)
+                    (value-of-comparison comp scope)))))
+
+(define value-of-comparison
+  (lambda (comp scope)
+    (cases comparison comp
+      (mult-comparison (sum cmp-op-sum-ps)
+                       (let ((ans (value-of-sum sum scope)))
+                         (let ((cmp-ans (value-of-compare-op-sum-pairs (answer-val ans) cmp-op-sum-ps (answer-scope ans))))
+                           (an-answer (cmp-res cmp-ans) '- (cmp-scope cmp-ans)))))
+      (single-comparison (sum)
+                         (value-of-sum sum scope)))))
+
+(define value-of-compare-op-sum-pairs
+  (lambda (left-hand-operand cmp-op-sum-ps scope)
+    (cases compare-op-sum-pairs cmp-op-sum-ps
+      (single-compare-op-sum-pairs (cmp-op-sum-p)
+                                   (value-of-compare-op-sum-pair left-hand-operand cmp-op-sum-p scope))
+      (mult-compare-op-sum-pairs (cmp-op-sum-ps cmp-op-sum-p)
+                                 (let ((cmp-ans (value-of-compare-op-sum-pairs left-hand-operand cmp-op-sum-ps scope)))
+                                   (if (cmp-res cmp-ans)
+                                       (value-of-compare-op-sum-pair (cmp-right-hand-operand cmp-ans) cmp-op-sum-p (cmp-scope cmp-ans))
+                                       cmp-ans))))))
+
+(define value-of-compare-op-sum-pair
+  (lambda (left-hand-operand cmp-op-sum-p scope)
+    (cases compare-op-sum-pair cmp-op-sum-p
+      (eq-sum-pair (eq-sum)
+                   (value-of-eq-sum left-hand-operand eq-sum scope))
+      (lt-sum-pair (lt-sum)
+                   (value-of-lt-sum left-hand-operand lt-sum scope))
+      (gt-sum-pair (gt-sum)
+                   (value-of-gt-sum left-hand-operand gt-sum scope)))))
+
+(define value-of-eq-sum
+  (lambda (left-hand-operand eq-s scope)
+    (cases eq-sum eq-s
+      (an-eq-sum (sum)
+                 (let ((ans (value-of-sum sum scope)))
+                   (a-cmp-answer (equal? left-hand-operand (answer-val ans)) (answer-val ans) (answer-scope ans)))))))
+
+(define value-of-lt-sum
+  (lambda (left-hand-operand lt-s scope)
+    (cases lt-sum lt-s
+      (an-lt-sum (sum)
+                 (let ((ans (value-of-sum sum scope)))
+                   (a-cmp-answer(< left-hand-operand (answer-val ans)) (answer-val ans) (answer-scope ans)))))))
+
+(define value-of-gt-sum
+  (lambda (left-hand-operand gt-s scope)
+    (cases gt-sum gt-s
+      (a-gt-sum (sum)
+                (let ((ans (value-of-sum sum scope)))
+                  (a-cmp-answer(> left-hand-operand (answer-val ans)) (answer-val ans) (answer-scope ans)))))))
+
+(define value-of-sum
+  (lambda (s scope)
+    (cases sum s
+      (add-sum (sum term)
+               (let ((ans1 (value-of-sum sum scope)))
+                 (let ((ans2 (value-of-term term (answer-scope ans1))))
+                   (let ((exp-val1 (answer-val ans1))
+                         (exp-val2 (answer-val ans2))
+                         (scope (answer-scope ans2)))
+                     (cond
+                       ((boolean? exp-val1) (an-answer (or exp-val1 exp-val2) '- scope))
+                       ((py-list? exp-val1) (an-answer (append exp-val1 exp-val2) '- scope))
+                       (else (an-answer (+ exp-val1 exp-val2) '- scope)))))))
+      (sub-sum (sum term)
+               (let ((ans1 (value-of-sum sum scope)))
+                 (let ((ans2 (value-of-term term (answer-scope ans1))))
+                   (let ((exp-val1 (answer-val ans1))
+                         (exp-val2 (answer-val ans2))
+                         (scope (answer-scope ans2)))
+                     (an-answer (- exp-val1 exp-val2) '- scope)))))
+      (single-sum (term)
+                  (value-of-term term scope)))))
+
+(define value-of-term
+  (lambda (t scope)
+    (cases term t
+      (mul-term (term factor)
+               (let ((ans1 (value-of-term term scope)))
+                 (let ((exp-val1 (answer-val ans1))
+                       (scope (answer-scope ans1)))
+                   (if (boolean? exp-val1)
+                       (if (not exp-val1)
+                           (an-answer #f '- scope)
+                           (let ((ans2 (value-of-term term scope)))
+                             (an-answer (and exp-val1 (answer-val ans2)) '- (answer-scope ans2))))
+                       (if (zero? exp-val1)
+                           (an-answer 0 '- scope)
+                           (let ((ans2 (value-of-term term scope)))
+                             (an-answer (* exp-val1 (answer-val ans2)) '- (answer-scope ans2))))))))
+      (div-term (term factor)
+               (let ((ans1 (value-of-term term scope)))
+                 (let ((ans2 (value-of-term term (answer-scope ans1))))
+                   (an-answer (/ (answer-val ans1) (answer-val ans2)) '- (answer-scope ans2)))))
+      (single-term (factor)
+                   (value-of-factor factor scope)))))
+
+(define value-of-factor
+  (lambda (fact scope)
+    (cases factor fact
+      (pos-factor (factor)
+                  (let ((ans (value-of-factor factor scope)))
+                    (an-answer (answer-val ans) '- (answer-scope ans))))
+      (neg-factor (factor)
+                  (let ((ans (value-of-factor factor scope)))
+                    (an-answer (- (answer-val ans)) '- (answer-scope ans))))
+      (single-factor (pow)
+                     (value-of-power pow scope)))))
+
+(define value-of-power
+  (lambda (pow scope)
+    (cases power pow
+      (a-pow (atom factor)
+             (let ((ans1 (value-of-atom atom scope)))
+               (let ((ans2 (value-of-factor factor (answer-scope ans1))))
+                 (an-answer (expt (answer-val ans1) (answer-val ans2)) '- (answer-scope ans2)))))
+      (a-primary (primary)
+                 (value-of-primary primary scope)))))
+
+(define value-of-primary
+  (lambda (prim scope)
+    (cases primary prim
+      (an-atom (atom)
+               (value-of-atom atom scope))
+      (index-access (primary exp)
+                   (let ((ans1 (value-of-primary primary scope)))
+                     (let ((ans2 (value-of-expression exp (answer-scope ans1))))
+                       (cases eval-list (answer-val ans1)
+                         (an-eval-list (py-list sc)
+                                       (an-answer (answer-val (value-of-expression (list-ref py-list (answer-val ans2)) sc)) '- scope))))))
+      (zero-arg-func-call (primary)
+                          (let ((ans (value-of-primary primary scope)))
+                            (an-answer (apply-function (answer-val ans) (list) scope) '- (answer-scope ans))))
+      (args-func-call (primary args)
+                          (let ((ans (value-of-primary primary scope)))
+                            (an-answer (apply-function (answer-val ans) args scope) '- (answer-scope ans)))))))
+
+(define value-of-atom
+  (lambda (atom scope)
+    (cond
+      ((symbol? atom)
+       (let ((scope-val (apply-scope scope atom)))
+         (if (thunk? scope-val)
+             (let ((exp-val (value-of-thunk scope-val)))
+               (an-answer exp-val '- (extend-scope scope atom exp-val)))
+             (an-answer scope-val '- scope))))
+       ((py-list? atom) (an-answer (an-eval-list atom (copy-of-scope scope)) '- scope))
+       (#t (an-answer atom '- scope)))))
+
+(define value-of-thunk
+  (lambda (th)
+    (cases thunk th
+      (a-thunk (exp scope)
+               (answer-val (value-of-expression exp scope))))))
+
+(define value-of-param-with-default
+  (lambda (pwd scope)
+    (cases param-with-default pwd
+      (a-param-with-default (ID exp)
+                            (let ((exp-val (answer-val (value-of-expression exp))))
+                              (an-answer exp-val '- (extend-scope scope ID exp-val)))))))
+
+(define value-of-print
+  (lambda (pr scope)
+    (cases print pr
+      (print-atom (atom)
+                  (let ((ans (value-of-atom atom scope)))
+                    (displayln (answer-val ans))
+                    (an-answer (list) '- (answer-scope ans))))
+      (print-atoms (atoms)
+                   (letrec ((eval-and-print-atoms (lambda (atoms scope res-list)
+                                                    (if (null? atoms)
+                                                        (begin
+                                                          (displayln res-list)
+                                                          (an-answer (list) '- scope))
+                                                        (let ((ans (value-of-atom (car atoms) scope)))
+                                                          (eval-and-print-atoms (cdr atoms) (answer-scope ans) (append res-list (list (answer-val ans)))))))))
+                     (eval-and-print-atoms atoms scope (list)))))))
+
+(define-datatype function function?
+  (a-function
+   (ID symbol?)
+   (params (lambda (p) (or (null? p) (params? p))))
+   (statements statements?)
+   (scope scope?)))
+
+(define apply-function
+  (lambda (func arg-list outer-scope)
+    (cases function func
+      (a-function (ID params statements scope)
+                  (let ((scope (extend-scope scope ID (apply-scope ID outer-scope))))
+                    (let ((scope (foldl (lambda (x y) (answer-scope (value-of-param-with-default y x))) scope params)))
+                      (let ((thunk-scope (copy-of-scope outer-scope)))
+                        (let ((scope (letrec ((add-args-to-scope (lambda (arg-list params scope)
+                                                                   (if (null? arg-list)
+                                                                       scope
+                                                                       (cases param-with-default (car params)
+                                                                         (a-param-with-default (ID exp)
+                                                                                               (add-args-to-scope
+                                                                                                (cdr arg-list)
+                                                                                                (cdr params)
+                                                                                                (extend-scope scope ID (a-thunk (car arg-list) thunk-scope)))))))))
+                                       (add-args-to-scope arg-list params scope))))
+                          (value-of-statements statements scope)))))))))
+                    
