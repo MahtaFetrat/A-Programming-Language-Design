@@ -53,8 +53,6 @@
      ((ELSE COLON statements) (an-else-block $3)))
     (for-stmt
      ((FOR ID IN expression COLON statements) (a-for-stmt $2 $4 $6)))
-    (print
-     ((PRINT OPEN-PAR atom CLOSE-PAR) (a-print $3)))
     (expression
      ((disjunction) (an-expression $1)))
     (disjunction
@@ -117,6 +115,12 @@
      ((EMPTY-LIST) (list)))
     (expressions
      ((expressions COMMA expression) (append $1 (list $3)))
-     ((expression) (list $1))))))
+     ((expression) (list $1)))
+    (print
+     ((PRINT OPEN-PAR atom CLOSE-PAR) (print-atom $3))
+     ((PRINT OPEN-PAR atoms CLOSE-PAR) (print-atoms $3)))
+    (atoms
+     ((atom) (list $1))
+     ((atoms COMMA atom) (append $1 (list $3)))))))
 
 (define lex-and-parse (lambda (input) (a-program (py-parser (lex input)))))
