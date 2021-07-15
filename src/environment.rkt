@@ -1,5 +1,6 @@
-#lang eopl
+#lang racket
 
+(require eopl)
 (provide (all-defined-out))
 
 ;environment datatype ------------------------------------------------------------------------
@@ -66,3 +67,11 @@
     (cases scope sc
       (global-scope () sc)
       (local-scope (global-var-list env) (local-scope (cons var global-var-list) env)))))
+
+(define get-thunk-scope
+  (lambda (sc)
+    (cases scope sc
+      (global-scope () (local-scope '() (globe)))
+      (local-scope (global-var-list env)
+                   (local-scope '() (foldl (lambda (x y) (extend-env x (apply-env globe y))) env global-var-list))))))
+  
