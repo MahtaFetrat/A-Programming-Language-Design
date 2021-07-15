@@ -222,7 +222,7 @@
    (arguments arguments?)))
 
 ;30. Arguments → Expression | Arguments ‘, ‘ Expression
-(define arguments? (lambda (e) ((and (not (null? e)) (list-of expression?)))))
+(define arguments? (lambda (e) (and (not (null? e)) (list-of expression?))))
 
 ;31. Atom → ID | ‘True‘ | ‘False‘ | ‘None‘ | NUMBER | List
 (define atom?
@@ -241,3 +241,4 @@
    (atom atom?))
   (print-atoms
    (atoms (list-of atom?))))
+
