@@ -102,7 +102,7 @@
   (lambda (for-st scope)
     (cases for-stmt for-st
       (a-for-stmt (ID exp sts)
-                  (let ((ans (value-of-expression exp)))
+                  (let ((ans (value-of-expression exp scope)))
                     (cases eval-list (answer-val ans)
                       (an-eval-list (py-list sc)
                                     (value-of-for-bodies ID py-list sc sts (answer-scope ans)))))))))
