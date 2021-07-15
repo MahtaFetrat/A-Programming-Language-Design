@@ -9,7 +9,7 @@
 (define value-of-program
   (lambda (pgm) ;program
     (cases program pgm
-      (a-program (statements) (value-of-statements (new-global-scope))))))
+      (a-program (statements) (value-of-statements statements (new-global-scope))))))
 
 (define value-of-statements
   (lambda (sts scope)
