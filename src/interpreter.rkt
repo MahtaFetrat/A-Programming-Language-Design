@@ -3,8 +3,8 @@
 
 (require "environment.rkt"
          "grammar.rkt"
-         "answer.rkt"
-         "thunk.rkt")
+         "tools.rkt"
+         "parser.rkt")
 
 (provide (all-defined-out))
 
@@ -285,10 +285,10 @@
                                        (an-answer (answer-val (value-of-expression (list-ref py-list (answer-val ans2)) sc)) '- scope))))))
       (zero-arg-func-call (primary)
                           (let ((ans (value-of-primary primary scope)))
-                            (an-answer (apply-function (answer-val ans) (list) scope) '- (answer-scope ans))))
+                            (an-answer (answer-val (apply-function (answer-val ans) (list) (answer-scope ans))) '- (answer-scope ans))))
       (args-func-call (primary args)
                           (let ((ans (value-of-primary primary scope)))
-                            (an-answer (apply-function (answer-val ans) args scope) '- (answer-scope ans)))))))
+                            (an-answer (answer-val (apply-function (answer-val ans) args scope)) '- (answer-scope ans)))))))
 
 (define value-of-atom
   (lambda (atom scope)
@@ -332,6 +332,22 @@
                                                           (eval-and-print-atoms (cdr atoms) (answer-scope ans) (append res-list (list (answer-val ans)))))))))
                      (eval-and-print-atoms atoms scope (list)))))))
 
+;end of interpreter ----------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------------------
+
+
+;function datatype -----------------------------------------------------------------------
 (define-datatype function function?
   (a-function
    (ID symbol?)
@@ -343,18 +359,87 @@
   (lambda (func arg-list outer-scope)
     (cases function func
       (a-function (ID params statements scope)
-                  (let ((scope (extend-scope scope ID (apply-scope ID outer-scope))))
-                    (let ((scope (foldl (lambda (x y) (answer-scope (value-of-param-with-default y x))) scope params)))
+                  (let ((scope (extend-scope scope ID (apply-scope outer-scope ID))))
+                    (let ((scope (add-params-to-scope params scope)))
                       (let ((thunk-scope (copy-of-scope outer-scope)))
-                        (let ((scope (letrec ((add-args-to-scope (lambda (arg-list params scope)
-                                                                   (if (null? arg-list)
-                                                                       scope
-                                                                       (cases param-with-default (car params)
-                                                                         (a-param-with-default (ID exp)
-                                                                                               (add-args-to-scope
-                                                                                                (cdr arg-list)
-                                                                                                (cdr params)
-                                                                                                (extend-scope scope ID (a-thunk (car arg-list) thunk-scope)))))))))
-                                       (add-args-to-scope arg-list params scope))))
+                        (let ((scope (add-args-to-scope arg-list params scope thunk-scope)))
                           (value-of-statements statements scope)))))))))
-                    
+
+(define add-args-to-scope
+  (lambda (arg-list params scope thunk-scope)
+    (if (null? arg-list)
+        scope
+        (cases param-with-default (car params)
+          (a-param-with-default (ID exp)
+                                (add-args-to-scope
+                                 (cdr arg-list)
+                                 (cdr params)
+                                 (extend-scope scope ID (a-thunk (car arg-list) thunk-scope))
+                                 thunk-scope))))))
+
+(define add-params-to-scope
+  (lambda (params scope)
+    (if (null? params)
+        scope
+        (let ((ans (value-of-param-with-default (car params))))
+          (add-params-to-scope (cdr params) (answer-scope ans))))))
+
+;expval datatype ----------------------------------------------------------------------------
+(define expval?
+  (lambda (e) (or (number? e) (boolean? e) (null? e) (function? e) (eval-list? e))))
+
+;answer datatype -----------------------------------------------------------------------------
+(define-datatype answer answer?
+  (an-answer
+   (value expval?)
+   (message symbol?)
+   (scope scope?)))
+
+(define answer-val
+  (lambda (ans)
+    (cases answer ans
+      (an-answer (val msg sc) val))))
+
+(define answer-scope
+  (lambda (ans)
+    (cases answer ans
+      (an-answer (val msg sc) sc))))
+
+(define return-message?
+  (lambda (ans)
+    (cases answer ans
+      (an-answer (val msg sc) (eqv? msg 'return)))))
+
+(define continue-message?
+  (lambda (ans)
+    (cases answer ans
+      (an-answer (val msg sc) (eqv? msg 'continue)))))
+
+(define break-message?
+  (lambda (ans)
+    (cases answer ans
+      (an-answer (val msg sc) (eqv? msg 'break)))))
+
+
+;comparison answer ---------------------------------------------------------------
+(define-datatype cmp-answer cmp-answer?
+  (a-cmp-answer
+   (result boolean?)
+   (right-hand-operand atom?)
+   (scope scope?)))
+
+(define cmp-res
+  (lambda (cmp-ans)
+    (cases cmp-answer cmp-ans
+      (a-cmp-answer (res rh sc) res))))
+
+(define cmp-right-hand-operand
+  (lambda (cmp-ans)
+    (lambda (cmp-ans)
+      (cases cmp-answer cmp-ans
+        (a-cmp-answer (res rh sc) rh)))))
+
+(define cmp-scope
+  (lambda (cmp-ans)
+    (cases cmp-answer cmp-ans
+      (a-cmp-answer (res rh sc) sc))))
