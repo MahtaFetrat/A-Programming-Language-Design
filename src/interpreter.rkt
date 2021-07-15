@@ -312,7 +312,7 @@
   (lambda (pwd scope)
     (cases param-with-default pwd
       (a-param-with-default (ID exp)
-                            (let ((exp-val (answer-val (value-of-expression exp))))
+                            (let ((exp-val (answer-val (value-of-expression exp scope))))
                               (an-answer exp-val '- (extend-scope scope ID exp-val)))))))
 
 (define value-of-print
@@ -381,7 +381,7 @@
   (lambda (params scope)
     (if (null? params)
         scope
-        (let ((ans (value-of-param-with-default (car params))))
+        (let ((ans (value-of-param-with-default (car params) scope)))
           (add-params-to-scope (cdr params) (answer-scope ans))))))
 
 ;expval datatype ----------------------------------------------------------------------------
