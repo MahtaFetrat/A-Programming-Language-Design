@@ -1,6 +1,7 @@
 #lang eopl
 
 (provide (all-defined-out))
+(require "environment.rkt")
 
 ;1. Program → Statements EOF
 (define-datatype program program?
@@ -233,7 +234,10 @@
 ;33. Expressions → Expressions ‘, ‘ Expression | Expression
 (define expressions? (lambda (e) (and (not (null? e)) (list-of expression?))))
 
-;34. Print → ‘print (‘ Atom ‘)‘
+;34. Print → ‘print (‘ Atom ‘)‘ | ‘print (‘ Atoms ‘)‘
+;where Atoms → Atom | Atoms‘,‘ Atom
 (define-datatype print print?
-  (a-print
-   (atom atom?)))
+  (print-atom
+   (atom atom?))
+  (print-atoms
+   (atoms (list-of atom?))))
