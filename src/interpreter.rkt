@@ -28,7 +28,9 @@
       (a-compound-stmt (st)
        (value-of-compound-stmt (st scope)))
       (a-simple-stmt (st)
-       (value-of-simple-stmt (st scope))))))
+       (value-of-simple-stmt (st scope)))
+      (a-print-stmt (st)
+                    (value-of-print (st scope))))))
 
 (define value-of-simple-stmt
   (lambda (st scope)
@@ -287,10 +289,12 @@
                               (an-answer exp-val '- (extend-scope scope ID exp-val)))))))
 
 (define value-of-print
-  (lambda (pr)
+  (lambda (pr scope)
     (cases print pr
       (a-print (atom)
-               (display atom)))))
+               (begin
+                 (display atom)
+                 (an-answer '() '- scope))))))
 
 (provide (all-defined-out))
 
