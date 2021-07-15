@@ -5,6 +5,8 @@
 (require "lexer.rkt"
          "grammar.rkt")
 
+(provide (all-defined-out))
+
 (define py-parser
   (parser
    (start statements)
