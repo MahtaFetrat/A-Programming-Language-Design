@@ -1,12 +1,14 @@
 #lang eopl
 
 (require "environment.rkt"
-         "grammar.rkt")
+         "grammar.rkt"
+         "thunk.rkt"
+         "interpreter.rkt")
 
 (provide (all-defined-out))
 
 (define expval?
-  (lambda (e) (or (number? e) (boolean? e) (null? e) (py-list? e))))
+  (lambda (e) (or (number? e) (boolean? e) (null? e) (function? e) (eval-list? e))))
 
 (define-datatype answer answer?
   (an-answer
@@ -44,17 +46,23 @@
 (define-datatype cmp-answer cmp-answer?
   (a-cmp-answer
    (result boolean?)
-   (right-hand-operand atom?)))
+   (right-hand-operand atom?)
+   (scope scope?)))
 
 (define cmp-res
   (lambda (cmp-ans)
     (cases cmp-answer cmp-ans
-      (a-cmp-answer (res rh) res))))
+      (a-cmp-answer (res rh sc) res))))
 
 (define cmp-right-hand-operand
   (lambda (cmp-ans)
     (lambda (cmp-ans)
       (cases cmp-answer cmp-ans
-        (a-cmp-answer (res rh) rh)))))
-    
+        (a-cmp-answer (res rh sc) rh)))))
+
+(define cmp-scope
+  (lambda (cmp-ans)
+    (cases cmp-answer cmp-ans
+      (a-cmp-answer (res rh sc) sc))))
+
    
