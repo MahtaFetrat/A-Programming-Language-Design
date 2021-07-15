@@ -15,7 +15,7 @@
    (statements statements?)
    (statement statement?)))
 
-;3. Statement → Compound_stmt | Simple_stmt
+;3. Statement → Compound_stmt | Simple_stmt | Print
 (define-datatype statement statement?
   (a-compound-stmt
    (compound-stmt compound-stmt?))
@@ -233,7 +233,7 @@
 ;33. Expressions → Expressions ‘, ‘ Expression | Expression
 (define expressions? (lambda (e) (and (not (null? e)) (list-of expression?))))
 
-;34. Print → ‘print (‘ Atom ‘)‘ | ‘print (‘ [Atoms] ‘)‘
+;34. Print → ‘print (‘ Atom ‘)‘
 (define-datatype print print?
   (a-print
    (atom atom?)))
