@@ -43,7 +43,7 @@
       (local-scope (global-var-list env)
         (cond
           ((member var global-var-list) (apply-env globe var))
-          ((assoc var env) (apply-env var env))
+          ((assoc var env) (apply-env env var))
           (else (eopl:error 'apply-scope "no bound value for variable ~s" var)))))))
 
 ;extends either the local env or the globe env based on wether it is 'global', in the global scope or not
