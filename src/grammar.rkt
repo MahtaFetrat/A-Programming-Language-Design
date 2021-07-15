@@ -20,7 +20,9 @@
   (a-compound-stmt
    (compound-stmt compound-stmt?))
   (a-simple-stmt
-   (simple-stmt simple-stmt?)))
+   (simple-stmt simple-stmt?))
+  (a-print-stmt
+   (print-stmt print?)))
 
 ;4. Simple_stmt → Assignment | Return_stmt | Global_stmt
 (define-datatype simple-stmt simple-stmt?
