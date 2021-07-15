@@ -20,8 +20,6 @@
   (lambda (env var val)
     (cons (cons var val) env))) ;because 'assoc' will always return the first pair found
 
-
-
 (define globe (empty-env))
 
 ;scope datatype ------------------------------------------------------------------------------
@@ -68,10 +66,10 @@
       (global-scope () sc)
       (local-scope (global-var-list env) (local-scope (cons var global-var-list) env)))))
 
-(define get-thunk-scope
+(define copy-of-scope
   (lambda (sc)
     (cases scope sc
       (global-scope () (local-scope '() globe))
       (local-scope (global-var-list env)
                    (local-scope '() (foldl (lambda (x y) (extend-env x (apply-env globe y))) env global-var-list))))))
-  
+ 
