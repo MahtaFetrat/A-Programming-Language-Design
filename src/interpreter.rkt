@@ -4,8 +4,6 @@
          "grammar.rkt"
          "answer.rkt")
 
-"!!!try to keep as few helper functions and datatypes as you can in this file. this module is only for 'value-of-functions'"
-
 (define value-of-program
   (lambda (pgm) ;program
     (cases program pgm
@@ -44,8 +42,7 @@
   (lambda (as scope)
     (cases assignment as
       (an-assignment (ID exp)
-                     (let ((exp-val (answer-val (value-of-expression exp scope))))
-                       (an-answer exp-val '- (extend-scope scope ID exp-val)))))))
+                     (an-answer exp-val '- (extend-scope scope ID (a-thunk exp (get-thunk-scope scope))))))))
 
 (define value-of-return-stmt
         (lambda (return-st scope)
@@ -114,14 +111,6 @@
     (cases expression exp
       (an-expression (disj)
                      (value-of-disjunction disj scope)))))
-"
-       a function call
-       the apply-function procedure must do the following:
-           1- extend the local scope with the function itself for recursive call (the function value itself, not globally, as python does, 'cause changes to function name don't effect the globe unless defined as 'global' later)
-           2-extend the local scope with the default values, make sure to do this step after 1, 'cause arguments can overrite function name with another value, just as in python
-           3-the function body, containing 'Statements' is evaluated with the local scope
-           4-finally note that function scopes, since they are local, dont influence the outer body after return. the influence on the globe will be properly applied btw. in other words, dont pass the scope in the answer of this function call to other sibling statements (unlike as we did in value-of-satements)))))
-"
 
 (define value-of-disjunction
   (lambda (disj scope)
@@ -206,7 +195,10 @@
       (add-sum (sum term)
                (let ((exp-val1 (answer-val (value-of-sum sum scope)))
                      (exp-val2 (answer-val (value-of-term term scope))))
-                 (an-answer (+ exp-val1 exp-val2) '- scope)))
+                 (cond
+                   ((boolean? exp-val1) (an-answer (or exp-val1 exp-val2) '- scope))
+                   ((py-list? exp-val1) (an-answer (append exp-val1 exp-val2) '- scope))
+                   (else (an-answer (+ exp-val1 exp-val2) '- scope)))))
       (sub-sum (sum term)
                (let ((exp-val1 (answer-val (value-of-sum sum scope)))
                      (exp-val2 (answer-val (value-of-term term scope))))
@@ -218,9 +210,16 @@
   (lambda (term scope)
     (cases term term
       (mul-term (term factor)
-               (let ((exp-val1 (answer-val (value-of-sum sum scope)))
-                     (exp-val2 (answer-val (value-of-term term scope))))
-                 (an-answer (* exp-val1 exp-val2) '- scope)))
+               (let ((exp-val1 (answer-val (value-of-sum sum scope))))
+                 (if (boolean? exp-val1)
+                     (if (false? exp-val1)
+                         (an-answer #f '- scope)
+                         (let ((exp-val2 (answer-val (value-of-term term scope))))
+                           (an-answer (and exp-val1 exp-val2) '- scope)))
+                     (if (zero? exp-val1)
+                         (an-answer 0 '- scope)
+                         (let ((exp-val2 (answer-val (value-of-term term scope))))
+                           (an-answer (* exp-val1 exp-val2) '- scope))))))
       (div-term (term factor)
                (let ((exp-val1 (answer-val (value-of-sum sum scope)))
                      (exp-val2 (answer-val (value-of-term term scope))))
@@ -264,7 +263,23 @@
 (define value-of-atom
   (lambda (atom scope)
     (if (symbol? atom)
-        (an-answer (apply-scope scope atom) '- scope)
-        (an-answer atom '- scope))))
-   
+        (let ((scope-val (apply-scope scope atom)))
+          (if (thunk? scope-val)
+              (let ((ans (value-of-thunk scope-val scope)))
+                (an-answer (answer-val ans) '- (answer-scope ans)))
+              (an-answer scope-val '- scope))))))
+
+(define value-of-thunk
+  (lambda (th scope)
+    (cases thunk th
+      (a-thunk (exp scope)
+               (let ((exp-val (value-of-expression exp scope)))
+                 (answer exp-val '- (extend-scope exp-val scope)))))))
+
+(define value-of-param-with-default
+  (lambda (pwd scope)
+    (cases param-with-default pwd
+      (a-param-with-default (ID exp)
+                            (let ((exp-val (answer-val (value-of-expression exp))))
+                              (an-answer exp-val '- (extend-scope scope ID exp-val)))))))
       
