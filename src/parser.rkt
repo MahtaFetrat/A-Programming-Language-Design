@@ -16,10 +16,11 @@
    (grammar
     (statements
      ((statement SEMICOL) (single-statements $1))
-     ((statements statements SEMICOL) (mult-statements $1 $2)))
+     ((statements statement SEMICOL) (mult-statements $1 $2)))
     (statement
+     ((compound-stmt) (a-compound-stmt $1))
      ((simple-stmt) (a-simple-stmt $1))
-     ((compound-stmt) (a-compound-stmt $1)))
+     ((print) (a-print-stmt $1)))
     (simple-stmt
      ((assignment) (assignment-simple-stmt $1))
      ((return-stmt) (return-simple-stmt $1))
@@ -52,6 +53,8 @@
      ((ELSE COLON statements) (an-else-block $3)))
     (for-stmt
      ((FOR ID IN expression COLON statements) (a-for-stmt $2 $4 $6)))
+    (print
+     ((PRINT OPEN-PAR atom CLOSE-PAR) (a-print $3)))
     (expression
      ((disjunction) (an-expression $1)))
     (disjunction
@@ -114,8 +117,6 @@
      ((EMPTY-LIST) (list)))
     (expressions
      ((expressions COMMA expression) (append $1 (list $3)))
-     ((expression) (list $1)))
-    (print
-     ((PRINT OPEN-PAR atom CLOSE-PAR) (a-print $3))))))
+     ((expression) (list $1))))))
 
 (define lex-and-parse (lambda (input) (a-program (py-parser (lex input)))))
