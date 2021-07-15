@@ -58,7 +58,7 @@
                      ((member var global-var-list) (begin
                                                      (set! globe (extend-env globe var val))
                                                      sc))
-                     (else (local-scope (global-var-list (extend-env env var val)))))))))
+                     (else (local-scope global-var-list (extend-env env var val))))))))
 
 (define add-to-global-var-list
   (lambda (sc var)
@@ -72,4 +72,7 @@
       (global-scope () (local-scope '() globe))
       (local-scope (global-var-list env)
                    (local-scope '() (foldl (lambda (x y) (extend-env x (apply-env globe y))) env global-var-list))))))
- 
+  
+
+
+
