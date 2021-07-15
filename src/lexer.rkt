@@ -10,8 +10,8 @@
                                 COMMA IF ELSE FOR IN OR AND NOT EQUAL
                                 LESS GREATER PLUS MINUS MUL POW DIV
                                 OPEN-BRACKET CLOSE-BRACKET ZERO-ARG
-                                TRUE FALSE NONE EMPTY-LIST EOF))
-                                
+                                TRUE FALSE NONE EMPTY-LIST EOF PRINT))
+
 (define py-lexer
   (lexer
    (";" (token-SEMICOL))
@@ -48,13 +48,14 @@
    ("False" (token-FALSE))
    ("None" (token-NONE))
    ("[]" (token-EMPTY-LIST))
+   ("print" (token-PRINT))
    ((:or
      (:+ (char-range #\0 #\9))
      (:: (:+ (char-range #\0 #\9)) #\. (:+ (char-range #\0 #\9))))
     (token-NUM (string->number lexeme)))
    ((:: (:or (char-range #\A #\Z) (char-range #\a #\z) #\_) (:* (:or (char-range #\A #\Z) (char-range #\a #\z) #\_ (char-range #\0 #\9))))
     (token-ID (string->symbol lexeme)))
-   (whitespace (py-lexer input-port))
+   (whitespace (py-lexer input-port)) ;*************
    ((eof) (token-EOF))))
    
 (define lex (lambda (input) (lambda () (py-lexer input))))
