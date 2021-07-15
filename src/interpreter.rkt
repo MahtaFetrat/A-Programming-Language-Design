@@ -301,7 +301,7 @@
 (define-datatype function function?
   (a-function
    (ID symbol?)
-   (params params?)
+   (params (lambda (p) (or (null? p) (params? p))))
    (statements statements?)
    (scope scope?)))
 
