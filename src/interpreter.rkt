@@ -3,7 +3,6 @@
 
 (require "environment.rkt"
          "grammar.rkt"
-         "tools.rkt"
          "parser.rkt")
 
 (provide (all-defined-out))
