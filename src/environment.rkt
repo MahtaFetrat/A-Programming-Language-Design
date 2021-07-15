@@ -71,7 +71,7 @@
 (define get-thunk-scope
   (lambda (sc)
     (cases scope sc
-      (global-scope () (local-scope '() (globe)))
+      (global-scope () (local-scope '() globe))
       (local-scope (global-var-list env)
                    (local-scope '() (foldl (lambda (x y) (extend-env x (apply-env globe y))) env global-var-list))))))
   
