@@ -26,7 +26,7 @@
   (lambda (st scope)
     (cases statement st
       (a-compound-stmt (st)
-       (value-of-compound-stmt (st scope)))
+       (value-of-compound-stmt st scope))
       (a-simple-stmt (st)
        (value-of-simple-stmt (st scope)))
       (a-print-stmt (st)
