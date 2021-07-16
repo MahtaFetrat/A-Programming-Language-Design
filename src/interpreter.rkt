@@ -148,7 +148,7 @@
     (cases inversion inv
       (not-inversion (inv)
                      (let ((ans (value-of-inversion inv scope)))
-                       (an-answer (not (answer-val ans) '- (answer-scope ans)))))
+                       (an-answer (not (answer-val ans)) '- (answer-scope ans))))
       (a-comparison (comp)
                     (value-of-comparison comp scope)))))
 
