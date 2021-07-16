@@ -325,17 +325,26 @@
     (cases print pr
       (print-atom (atom)
                   (let ((ans (value-of-atom atom scope)))
-                    (displayln (answer-val ans))
+                    (displayln (atom->printable (answer-val ans)))
                     (an-answer (list) '- (answer-scope ans))))
-      (print-atoms (atoms)
+      (print-atoms (atoms) 
                    (letrec ((eval-and-print-atoms (lambda (atoms scope res-list)
                                                     (if (null? atoms)
                                                         (begin
                                                           (displayln res-list)
                                                           (an-answer (list) '- scope))
                                                         (let ((ans (value-of-atom (car atoms) scope)))
-                                                          (eval-and-print-atoms (cdr atoms) (answer-scope ans) (append res-list (list (answer-val ans)))))))))
+                                                          (eval-and-print-atoms (cdr atoms) (answer-scope ans) (append res-list (list (atom->printable (answer-val ans))))))))))
                      (eval-and-print-atoms atoms scope (list)))))))
+
+(define atom->printable
+  (lambda (at)
+    (if (eval-list? at)
+        (cases eval-list at
+          (an-eval-list (py-list sc)
+                        (map (lambda (a) (atom->printable (answer-val (value-of-expression a sc)))) py-list)))
+        at)))
+
 
 ;end of interpreter ----------------------------------------------------------------------
 ;-----------------------------------------------------------------------------------------
