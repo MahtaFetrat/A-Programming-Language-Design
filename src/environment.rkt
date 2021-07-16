@@ -33,7 +33,7 @@
 (define new-global-scope (lambda () (global-scope)))
 (define new-local-scope (lambda (sc) (cases scope sc
                                        (global-scope () (local-scope (list) (empty-env)))
-                                       (local-scope (gvl env) (local-scope (list) (env))))))
+                                       (local-scope (gvl env) (local-scope (list) env)))))
 
 ;gets the proper local or global value for a variable
 (define apply-scope
@@ -71,11 +71,12 @@
     (cases scope sc
       (global-scope () (local-scope '() globe))
       (local-scope (global-var-list env)
-                   (local-scope '() (add-global-vars-to-env global-var-list env))))))
+                   (local-scope '() (append (add-global-vars-to-env global-var-list env) env))))))
 
 (define add-global-vars-to-env
   (lambda (global-var-list env)
     (if (null? global-var-list)
         env
         (add-global-vars-to-env (cdr global-var-list) (extend-env env (car global-var-list) (apply-env globe (car global-var-list)))))))
+  
  
