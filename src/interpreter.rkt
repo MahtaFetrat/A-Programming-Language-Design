@@ -373,7 +373,7 @@
   (lambda (func arg-list outer-scope)
     (cases function func
       (a-function (ID params statements scope)
-                  (let ((scope (extend-scope scope ID (apply-scope outer-scope ID))))
+                  (let ((scope (extend-scope scope ID func)))
                     (let ((scope (add-params-to-scope params scope)))
                       (let ((thunk-scope (copy-of-scope outer-scope)))
                         (let ((scope (add-args-to-scope arg-list params scope thunk-scope)))
