@@ -226,7 +226,10 @@
 
 ;31. Atom → ID | ‘True‘ | ‘False‘ | ‘None‘ | NUMBER | List
 (define atom?
-  (lambda (a) (or (symbol? a) (boolean? a) (null? a) (number? a) (py-list? a))))
+  (lambda (a) (or (symbol? a) (boolean? a) (none? a) (number? a) (py-list? a))))
+
+(define-datatype none none?
+  (a-none))
 
 ;32. List → ‘[‘ Expressions ‘]‘ | ‘[]‘
 (define py-list? (list-of expression?))
@@ -241,4 +244,3 @@
    (atom atom?))
   (print-atoms
    (atoms (list-of atom?))))
-
