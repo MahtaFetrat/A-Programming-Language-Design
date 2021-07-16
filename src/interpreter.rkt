@@ -42,15 +42,15 @@
       (assignment-simple-stmt (assignment) (value-of-assignment assignment scope))
       (return-simple-stmt (return-stmt) (value-of-return-stmt return-stmt scope))
       (global-simple-stmt (global-stmt)(value-of-global-stmt global-stmt scope))
-      (pass-stmt () (an-answer (list) '- scope))
-      (break-stmt () (an-answer (list) 'break scope))
-      (continue-stmt () (an-answer (list) 'continue scope)))))
+      (pass-stmt () (an-answer (a-none) '- scope))
+      (break-stmt () (an-answer (a-none) 'break scope))
+      (continue-stmt () (an-answer (a-none) 'continue scope)))))
 
 (define value-of-assignment
   (lambda (as scope)
     (cases assignment as
       (an-assignment (ID exp)
-                     (an-answer (list) '- (extend-scope scope ID (a-thunk exp (copy-of-scope scope))))))))
+                     (an-answer (a-none) '- (extend-scope scope ID (a-thunk exp (copy-of-scope scope))))))))
 
 (define value-of-return-stmt
         (lambda (return-st scope)
@@ -64,7 +64,7 @@
   (lambda (global-st scope)
     (cases global-stmt global-st
       (a-global-stmt (ID)
-                     (an-answer (list) '- (add-to-global-var-list scope ID))))))
+                     (an-answer (a-none) '- (add-to-global-var-list scope ID))))))
                                  
 (define value-of-compound-stmt
   (lambda (st scope)
@@ -78,10 +78,10 @@
     (cases function-def func-def
       (params-func-def (ID params sts)
                            (let ((new-func (a-function ID params sts (new-local-scope scope))))
-                             (an-answer (list) '- (extend-scope scope ID new-func))))
+                             (an-answer (a-none) '- (extend-scope scope ID new-func))))
       (zero-param-func-def (ID sts)
                            (let ((new-func (a-function ID (list) sts (new-local-scope scope))))
-                             (an-answer (list) '- (extend-scope scope ID new-func)))))))
+                             (an-answer (a-none) '- (extend-scope scope ID new-func)))))))
 
 (define value-of-if-stmt
   (lambda (if-st scope)
@@ -110,11 +110,11 @@
 (define value-of-for-bodies
   (lambda (ID iterable stored-scope sts scope)
     (if (null? iterable)
-        (an-answer (list) '- scope)
+        (an-answer (a-none) '- scope)
         (let ((ans1 (value-of-expression (car iterable) stored-scope)))
           (let ((ans2 (value-of-statements sts (extend-scope scope ID (answer-val ans1)))))
             (if (break-message? ans2)
-                (an-answer (list) '- (answer-scope ans2))
+                (an-answer (a-none) '- (answer-scope ans2))
                 (value-of-for-bodies ID (cdr iterable) stored-scope sts (answer-scope ans2))))))))
                   
 (define value-of-expression
@@ -326,24 +326,28 @@
       (print-atom (atom)
                   (let ((ans (value-of-atom atom scope)))
                     (displayln (atom->printable (answer-val ans)))
-                    (an-answer (list) '- (answer-scope ans))))
+                    (an-answer (a-none) '- (answer-scope ans))))
       (print-atoms (atoms) 
                    (letrec ((eval-and-print-atoms (lambda (atoms scope res-list)
                                                     (if (null? atoms)
                                                         (begin
                                                           (displayln res-list)
-                                                          (an-answer (list) '- scope))
+                                                          (an-answer (a-none) '- scope))
                                                         (let ((ans (value-of-atom (car atoms) scope)))
                                                           (eval-and-print-atoms (cdr atoms) (answer-scope ans) (append res-list (list (atom->printable (answer-val ans))))))))))
                      (eval-and-print-atoms atoms scope (list)))))))
 
 (define atom->printable
   (lambda (at)
-    (if (eval-list? at)
+    (cond
+      ((eval-list? at)
         (cases eval-list at
           (an-eval-list (py-list sc)
-                        (map (lambda (a) (atom->printable (answer-val (value-of-expression a sc)))) py-list)))
-        at)))
+                        (map (lambda (a) (atom->printable (answer-val (value-of-expression a sc)))) py-list))))
+      ((boolean? at)
+       (if at 'True 'False))
+      ((none? at) 'None)
+      (#t at))))
 
 
 ;end of interpreter ----------------------------------------------------------------------
@@ -400,7 +404,7 @@
 
 ;expval datatype ----------------------------------------------------------------------------
 (define expval?
-  (lambda (e) (or (number? e) (boolean? e) (null? e) (function? e) (eval-list? e))))
+  (lambda (e) (or (number? e) (boolean? e) (none? e) (function? e) (eval-list? e))))
 
 ;answer datatype -----------------------------------------------------------------------------
 (define-datatype answer answer?
