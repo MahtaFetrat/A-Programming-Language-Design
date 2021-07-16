@@ -107,7 +107,7 @@
      ((ID) $1)
      ((TRUE) #t)
      ((FALSE) #f)
-     ((NONE) (list))
+     ((NONE) (a-none))
      ((NUM) $1)
      ((list) $1))
     (list
