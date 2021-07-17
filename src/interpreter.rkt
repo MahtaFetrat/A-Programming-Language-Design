@@ -55,7 +55,7 @@
 (define value-of-return-stmt
         (lambda (return-st scope)
           (cases return-stmt return-st
-            (empty-return-stmt () (an-answer '- 'return scope))
+            (empty-return-stmt () (an-answer (a-none) 'return scope))
             (exp-return-stmt (exp)
                              (let ((ans (value-of-expression exp scope)))
                                (an-answer (answer-val ans) 'return (answer-scope ans)))))))
